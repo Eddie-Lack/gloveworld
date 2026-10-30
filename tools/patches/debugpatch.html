@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glover Debug Patcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column. A drop zone shaped like a cartridge slot, the patch steps as a checklist, the
+   save buttons, then what the debug ROM does. Same type and palette family as mooedit. */
+:root {
+  --bg: #f3f4f7;
+  --panel: #ffffff;
+  --ink: #1d2230;
+  --muted: #5d6578;
+  --line: #d9dce5;
+  --accent: #3b4fd8;
+  --accent-ink: #ffffff;
+  --slot: #e6e8ee;
+  --good: #1f8a4c;
+  --bad: #c42b2b;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141b; --panel: #1b1e28; --ink: #e6e8ef; --muted: #9aa1b4; --line: #2e3242;
+    --accent: #8b9bff; --accent-ink: #10132a; --slot: #232736; --good: #4cc985; --bad: #ff7b7b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141b; --panel: #1b1e28; --ink: #e6e8ef; --muted: #9aa1b4; --line: #2e3242;
+  --accent: #8b9bff; --accent-ink: #10132a; --slot: #232736; --good: #4cc985; --bad: #ff7b7b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font-body); padding-inline: 16px; padding-block: 24px 48px; }
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 20px; }
+h1 { font: 600 1.8rem/1.1 var(--font-display); margin: 0; text-wrap: balance; }
+h2 { font: 600 0.8rem/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+code, kbd { font-family: var(--font-data); font-size: 0.88em; }
+.intro { display: grid; gap: 8px; }
+.intro p { color: var(--muted); }
+
+.drop {
+  display: grid; place-items: center; gap: 6px; text-align: center; padding: 34px 16px;
+  background: var(--slot); border: 2px dashed var(--line); border-radius: 12px; cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.drop:hover, .drop.over { border-color: var(--accent); }
+.drop:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+.drop strong { font: 600 1.15rem var(--font-display); }
+.drop span { color: var(--muted); font-size: 0.9rem; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.drop .slot { width: 120px; height: 10px; border-radius: 5px; background: var(--line); margin-bottom: 8px; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.steps li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; }
+.steps .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); margin-top: 2px; display: grid; place-items: center; }
+.steps li[data-state="ok"] .dot { border-color: var(--good); background: var(--good); }
+.steps li[data-state="ok"] .dot::after { content: ""; width: 6px; height: 9px; border: solid var(--panel); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.steps li[data-state="fail"] .dot { border-color: var(--bad); background: var(--bad); }
+.steps li[data-state="work"] .dot { border-color: var(--accent); border-right-color: transparent; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .steps li[data-state="work"] .dot { animation: none; } }
+.steps .what { font-weight: 500; }
+.steps .detail { color: var(--muted); font-size: 0.88rem; font-family: var(--font-data); overflow-wrap: anywhere; }
+.steps li[data-state="fail"] .detail { color: var(--bad); font-family: var(--font-body); }
+
+.save { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button {
+  font: 500 0.95rem var(--font-body); color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 9px 16px; cursor: pointer;
+}
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note { color: var(--muted); font-size: 0.88rem; }
+.note.bad { color: var(--bad); }
+
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 0.7rem var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+td:first-child { white-space: nowrap; font-weight: 500; }
+ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+li { max-width: 68ch; }
+</style>
+</head>
+<body>
+<main>
+  <header class="intro">
+    <h1>Glover Debug Patcher</h1>
+    <p>Drop your Glover (USA) ROM to make the debug ROM. Controller 2 drives the team's debug controls, and the
+      game's debug messages and input recordings go to the IS-Viewer log of your emulator or flashcart.</p>
+    <p>The ROM stays on your computer: the page patches it in the browser and sends nothing anywhere.</p>
+  </header>
+
+  <label class="drop" id="drop">
+    <div class="slot" aria-hidden="true"></div>
+    <strong>Drop the ROM here</strong>
+    <span>or click to choose a file: .z64, .v64 or .n64</span>
+    <input type="file" id="file" accept=".z64,.v64,.n64,.rom,.bin">
+  </label>
+
+  <section class="panel" aria-labelledby="steps-h">
+    <h2 id="steps-h">Patch</h2>
+    <ol class="steps" id="steps">
+      <li id="s-read"><span class="dot"></span><div><div class="what">Read the ROM and put it in .z64 byte order</div><div class="detail">waiting for a file</div></div></li>
+      <li id="s-sha"><span class="dot"></span><div><div class="what">Check that it is Glover (USA)</div><div class="detail">SHA-1 270be17b3c8da9b88a7b99c2a545b0bce16837f4</div></div></li>
+      <li id="s-cic"><span class="dot"></span><div><div class="what">Find the boot chip from the header checksum</div><div class="detail"></div></div></li>
+      <li id="s-patch"><span class="dot"></span><div><div class="what">Check and replace the patched words</div><div class="detail"></div></div></li>
+      <li id="s-crc"><span class="dot"></span><div><div class="what">Recompute the header checksum</div><div class="detail"></div></div></li>
+    </ol>
+    <div class="save">
+      <button class="primary" id="save-rom" disabled>Save debug ROM</button>
+      <button id="save-ips" disabled>Save IPS patch</button>
+    </div>
+    <p class="note" id="note" role="status"></p>
+  </section>
+
+  <section class="panel" aria-labelledby="pad2-h">
+    <h2 id="pad2-h">Controller 2 in the debug ROM</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Input</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>C-left, C-right</td><td>Move Glover (and the ball, if he holds it) to the previous or next platform.</td></tr>
+          <tr><td>L</td><td>Mark every level and every garib as done in the current save slot.</td></tr>
+          <tr><td>Z</td><td>Show or hide the timing bars.</td></tr>
+          <tr><td>Stick, B, A</td><td>Move the <code>helper</code> box. Hold Z to change its size instead.</td></tr>
+          <tr><td>D-pad left, right</td><td>Play the previous or next of the 61 songs.</td></tr>
+          <tr><td>D-pad right, down (held)</td><td>Turn the background light.</td></tr>
+          <tr><td>D-pad up (held)</td><td>Make a ring of puffs around Glover.</td></tr>
+          <tr><td>R</td><td>Toggle slower hand acceleration.</td></tr>
+          <tr><td>Hold A, then B</td><td>Quit to the menu. In record mode, this saves the recording first.</td></tr>
+          <tr><td>C-up, C-down (held)</td><td>Push Glover, or the ball when he holds it, up or down.</td></tr>
+          <tr><td>Start</td><td>Damage the ball.</td></tr>
+          <tr><td>Z on the title screen</td><td>Cycle demo mode: off, record, play back.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="know-h">
+    <h2 id="know-h">Good to know</h2>
+    <ul>
+      <li>Plug in controller 2 before the console starts. Its stick, A and B move the <code>helper</code> box all the time; that is how the debug code works.</li>
+      <li>L can be saved into your save slot. Use a slot you don't mind.</li>
+      <li>To record, press Z once on the title screen with controller 2 and start a level. The intro level always plays back instead. Hold A and press B on controller 2 to save the recording.</li>
+      <li>Messages and recordings go to the IS-Viewer: ares and mupen64plus show them in their logs, and SummerCart64 sends them over USB. In mupen64plus they are the <code>IS64:</code> lines.</li>
+      <li><code>tools/patches/moolog.py</code> turns the recording lines of a log into <code>.moo</code> files, and <code>mooedit.html</code> views and edits them.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+"use strict";
+const ROM_SHA1 = "270be17b3c8da9b88a7b99c2a545b0bce16837f4";
+const CIC_SEEDS = { "6102": 0xF8CA4DDC, "6103": 0xA3886759, "6105": 0xDF26F436, "6106": 0x1FEA617A };
+// EDITS BEGIN (written by mkpatchpage.py from debugpad2.py; do not edit by hand)
+// [ROM offset, original word or null, new word or null]
+const EDITS = [
+  [531324, 2353180944, 2353179744],
+  [531464, 2420289809, 2420288609],
+  [531696, 2420289808, 2420288608],
+  [532828, 2420289802, 2420288602],
+  [532892, 2420289800, 2420288600],
+  [532960, 2420289772, 2420288572],
+  [532976, 2218963152, 2218961952],
+  [533036, 2218963152, 2218961952],
+  [533096, 2218963154, 2218961954],
+  [533156, 2218963154, 2218961954],
+  [533216, 2420289771, 2420288571],
+  [533272, 2420289770, 2420288570],
+  [533304, 2218963152, 2218961952],
+  [533360, 2218963152, 2218961952],
+  [533416, 2218963154, 2218961954],
+  [533472, 2218963154, 2218961954],
+  [533528, 2420289771, 2420288571],
+  [533584, 2420289770, 2420288570],
+  [533728, 2420289804, 2420288604],
+  [533812, 2420289777, 2420288577],
+  [533888, 2420289805, 2420288605],
+  [533968, 2420289778, 2420288578],
+  [534000, 2420289779, 2420288579],
+  [534388, 2420289803, 2420288603],
+  [534536, 2420289770, 2420288570],
+  [534552, 2420289799, 2420288599],
+  [534936, 2420289782, 2420288582],
+  [535000, 2420289783, 2420288583],
+  [535036, 2420289801, 2420288601],
+  [86572, 2420289800, 2420288600],
+  [258168, 201720141, 201721556],
+  [241008, 666763256, 134493581],
+  [241012, 2948464640, 0],
+  [59176, null, 134612784],
+  [59180, null, 0],
+  [535372, 666761872, null],
+  [535376, 665257248, null],
+  [535388, 15077413, null],
+  [535392, 809631747, null],
+  [535396, 2947810664, null],
+  [535376, null, 666763232],
+  [535380, null, 2948530200],
+  [535384, null, 2947612692],
+  [535388, null, 201792476],
+  [535392, null, 2947547152],
+  [535396, null, 1007779871],
+  [535400, null, 2385627120],
+  [535404, null, 604241921],
+  [535408, null, 1006731295],
+  [535412, null, 2887829488],
+  [535416, null, 201642015],
+  [535420, null, 4227105],
+  [535424, null, 1006731295],
+  [535428, null, 2888943600],
+  [535432, null, 201792484],
+  [535436, null, 33562657],
+  [535440, null, 201720141],
+  [535444, null, 604241922],
+  [535448, null, 2411659288],
+  [535452, null, 2410741780],
+  [535456, null, 2410676240],
+  [535460, null, 666697760],
+  [535464, null, 65011720],
+  [535468, null, 0],
+  [535472, null, 666763232],
+  [535476, null, 2947678232],
+  [535480, null, 10522657],
+  [535484, null, 2947612692],
+  [535488, null, 8423457],
+  [535492, null, 2947547152],
+  [535496, null, 1007727615],
+  [535500, null, 907018272],
+  [535504, null, 872611808],
+  [535508, null, 5378090],
+  [535512, null, 272629762],
+  [535516, null, 2948530204],
+  [535520, null, 873660384],
+  [535524, null, 201792476],
+  [535528, null, 0],
+  [535532, null, 4202529],
+  [535536, null, 38803489],
+  [535540, null, 33755179],
+  [535544, null, 1346371605],
+  [535548, null, 1006871648],
+  [535552, null, 1007068256],
+  [535556, null, 885391376],
+  [535560, null, 6301729],
+  [535564, null, 2361524224],
+  [535568, null, 809631747],
+  [535572, null, 272629767],
+  [535576, null, 0],
+  [535580, null, 1006871648],
+  [535584, null, 878903312],
+  [535588, null, 2355232768],
+  [535592, null, 809631747],
+  [535596, null, 339804157],
+  [535600, null, 0],
+  [535604, null, 2384592896],
+  [535608, null, 640745476],
+  [535612, null, 2919366656],
+  [535616, null, 638582788],
+  [535620, null, 33886251],
+  [535624, null, 339804144],
+  [535628, null, 1006871648],
+  [535632, null, 878903312],
+  [535636, null, 2355232768],
+  [535640, null, 809631747],
+  [535644, null, 339804157],
+  [535648, null, 1006810111],
+  [535652, null, 876740628],
+  [535656, null, 2891055104],
+  [535660, null, 201792484],
+  [535664, null, 0],
+  [535668, null, 2411659292],
+  [535672, null, 2410807320],
+  [535676, null, 2410741780],
+  [535680, null, 2410676240],
+  [535684, null, 666697760],
+  [535688, null, 65011720],
+  [535692, null, 0],
+  [535696, null, 2428698624],
+  [535700, null, 274726920],
+  [535704, null, 10489889],
+  [535708, null, 10756129],
+  [535712, null, 616955905],
+  [535716, null, 2692939776],
+  [535720, null, 2428698624],
+  [535724, null, 612630529],
+  [535728, null, 341901307],
+  [535732, null, 608305153],
+  [535736, null, 65011720],
+  [535740, null, 0],
+  [535744, null, 666763128],
+  [535748, null, 2947809400],
+  [535752, null, 10526753],
+  [535756, null, 2947743860],
+  [535760, null, 12621857],
+  [535764, null, 2947612780],
+  [535768, null, 34849],
+  [535772, null, 2948530304],
+  [535776, null, 2947874940],
+  [535780, null, 2947678320],
+  [535784, null, 442499110],
+  [535788, null, 2947547240],
+  [535792, null, 665976848],
+  [535796, null, 605356042],
+  [535800, null, 665059344],
+  [535804, null, 1007058968],
+  [535808, null, 616963504],
+  [535812, null, 201721636],
+  [535816, null, 10273],
+  [535820, null, 37890081],
+  [535824, null, 36968481],
+  [535828, null, 2422341632],
+  [535832, null, 135426],
+  [535836, null, 1006731281],
+  [535840, null, 2230305],
+  [535844, null, 2418201932],
+  [535848, null, 2694971392],
+  [535852, null, 2422341632],
+  [535856, null, 640745473],
+  [535860, null, 36929578],
+  [535864, null, 809631759],
+  [535868, null, 1006731281],
+  [535872, null, 2230305],
+  [535876, null, 2418201932],
+  [535880, null, 614793217],
+  [535884, null, 610467841],
+  [535888, null, 2694971392],
+  [535892, null, 301989892],
+  [535896, null, 614793217],
+  [535900, null, 841089055],
+  [535904, null, 339804140],
+  [535908, null, 0],
+  [535912, null, 2696216576],
+  [535916, null, 614793217],
+  [535920, null, 37756961],
+  [535924, null, 201721580],
+  [535928, null, 11675683],
+  [535932, null, 369164255],
+  [535936, null, 665059344],
+  [535940, null, 39850017],
+  [535944, null, 2411659392],
+  [535948, null, 2411004028],
+  [535952, null, 2410938488],
+  [535956, null, 2410872948],
+  [535960, null, 2410807408],
+  [535964, null, 2410741868],
+  [535968, null, 2410676328],
+  [535972, null, 666697864],
+  [535976, null, 65011720],
+  [535980, null, 0],
+  [535984, null, 1297043268],
+  [535988, null, 1096040736],
+  [535992, null, 0],
+  [535996, null, 1297043269],
+  [536000, null, 1313081856],
+  [58588, null, 666763112],
+  [58592, null, 2947547280],
+  [58596, null, 8421409],
+  [58600, null, 665059344],
+  [58604, null, 1007058961],
+  [58608, null, 617010496],
+  [58612, null, 2948530324],
+  [58616, null, 201721636],
+  [58620, null, 10273],
+  [58624, null, 665059344],
+  [58628, null, 4204577],
+  [58632, null, 201721636],
+  [58636, null, 33566753],
+  [58640, null, 665059344],
+  [58644, null, 8529953],
+  [58648, null, 604176394],
+  [58652, null, 2695036928],
+  [58656, null, 201721580],
+  [58660, null, 608501761],
+  [58664, null, 604110849],
+  [58668, null, 2411659412],
+  [58672, null, 2410676368],
+  [58676, null, 666697880],
+  [58680, null, 65011720],
+  [58684, null, 0],
+  [58688, null, 1297043270],
+  [58692, null, 1229735200],
+  [58696, null, 0],
+  [58700, null, 808530483],
+  [58704, null, 875902519],
+  [58708, null, 943276354],
+  [58712, null, 1128547654],
+  [58876, null, 666763232],
+  [58880, null, 2948530200],
+  [58884, null, 665059344],
+  [58888, null, 1007058968],
+  [58892, null, 616963516],
+  [58896, null, 201721636],
+  [58900, null, 10273],
+  [58904, null, 665059344],
+  [58908, null, 201721580],
+  [58912, null, 4204577],
+  [58916, null, 2411659288],
+  [58920, null, 4129],
+  [58924, null, 65011720],
+  [58928, null, 666697760],
+  [58932, null, 666763240],
+  [58936, null, 2948530192],
+  [58940, null, 8398881],
+  [58944, null, 1006927910],
+  [58948, null, 612685176],
+  [58952, null, 201721580],
+  [58956, null, 0],
+  [58960, null, 2411659280],
+  [58964, null, 666697752],
+  [58968, null, 65011720],
+  [58972, null, 0]
+];
+// EDITS END
+
+const $ = (id) => document.getElementById(id);
+let result = null;
+
+function step(id, state, detail) {
+  const li = $(id);
+  li.dataset.state = state;
+  if (detail !== undefined) li.querySelector(".detail").textContent = detail;
+}
+// Each step's starting text, restored before the next file.
+const STEP_TEXT = {};
+document.querySelectorAll("#steps li").forEach((li) => { STEP_TEXT[li.id] = li.querySelector(".detail").textContent; });
+function resetSteps() {
+  Object.keys(STEP_TEXT).forEach((id) => { $(id).dataset.state = ""; $(id).querySelector(".detail").textContent = STEP_TEXT[id]; });
+  $("save-rom").disabled = true; $("save-ips").disabled = true; $("note").textContent = ""; $("note").className = "note";
+  result = null;
+}
+
+function toZ64(b) {
+  const m = ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]) >>> 0;
+  if (m === 0x80371240) return { rom: b.slice(), order: ".z64 (big-endian)" };
+  const out = new Uint8Array(b.length);
+  if (m === 0x37804012) {
+    for (let i = 0; i + 1 < b.length; i += 2) { out[i] = b[i + 1]; out[i + 1] = b[i]; }
+    return { rom: out, order: ".v64 (byte-swapped), converted" };
+  }
+  if (m === 0x40123780) {
+    for (let i = 0; i + 3 < b.length; i += 4) { out[i] = b[i + 3]; out[i + 1] = b[i + 2]; out[i + 2] = b[i + 1]; out[i + 3] = b[i]; }
+    return { rom: out, order: ".n64 (little-endian), converted" };
+  }
+  return null;
+}
+
+const word = (r, o) => ((r[o] << 24) | (r[o + 1] << 16) | (r[o + 2] << 8) | r[o + 3]) >>> 0;
+function putWord(r, o, v) { r[o] = v >>> 24; r[o + 1] = (v >>> 16) & 255; r[o + 2] = (v >>> 8) & 255; r[o + 3] = v & 255; }
+const hex8 = (v) => "0x" + (v >>> 0).toString(16).toUpperCase().padStart(8, "0");
+
+// The N64 boot code's checksum of 1 MiB from 0x1000, as in the libdragon and n64crc tools.
+function checksum(r, cic) {
+  let t1, t2, t3, t4, t5, t6;
+  t1 = t2 = t3 = t4 = t5 = t6 = CIC_SEEDS[cic];
+  for (let i = 0x1000; i < 0x101000; i += 4) {
+    const d = word(r, i);
+    if (((t6 + d) >>> 0) < t6) t4 = (t4 + 1) >>> 0;
+    t6 = (t6 + d) >>> 0;
+    t3 = (t3 ^ d) >>> 0;
+    const s = d & 0x1F;
+    const rot = s ? ((d << s) | (d >>> (32 - s))) >>> 0 : d;
+    t5 = (t5 + rot) >>> 0;
+    t2 = (t2 > d ? t2 ^ rot : t2 ^ t6 ^ d) >>> 0;
+    t1 = cic === "6105" ? (t1 + ((word(r, 0x750 + (i & 0xFF)) ^ d) >>> 0)) >>> 0 : (t1 + ((t5 ^ d) >>> 0)) >>> 0;
+  }
+  if (cic === "6103") return [((t6 ^ t4) + t3) >>> 0, ((t5 ^ t2) + t1) >>> 0];
+  if (cic === "6106") return [(Math.imul(t6, t4) + t3) >>> 0, (Math.imul(t5, t2) + t1) >>> 0];
+  return [(t6 ^ t4 ^ t3) >>> 0, (t5 ^ t2 ^ t1) >>> 0];
+}
+
+async function sha1(bytes) {
+  const h = await crypto.subtle.digest("SHA-1", bytes);
+  return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function ips(oldR, newR) {
+  const parts = [new TextEncoder().encode("PATCH")];
+  for (let i = 0; i < newR.length;) {
+    if (oldR[i] === newR[i]) { i++; continue; }
+    let start = i;
+    while (i < newR.length && oldR[i] !== newR[i] && i - start < 0xFFFF) i++;
+    if (start === 0x454F46) start--; // an offset that reads "EOF" would end the patch early
+    const len = i - start, rec = new Uint8Array(5 + len);
+    rec[0] = start >>> 16; rec[1] = (start >>> 8) & 255; rec[2] = start & 255; rec[3] = len >>> 8; rec[4] = len & 255;
+    rec.set(newR.subarray(start, i), 5);
+    parts.push(rec);
+  }
+  parts.push(new TextEncoder().encode("EOF"));
+  return new Blob(parts);
+}
+
+const pause = () => new Promise((r) => setTimeout(r, 30));
+
+async function patch(file) {
+  resetSteps();
+  step("s-read", "work", "reading " + file.name);
+  await pause();
+  const raw = new Uint8Array(await file.arrayBuffer());
+  const conv = toZ64(raw);
+  if (!conv) { step("s-read", "fail", "This file is not an N64 ROM: its first bytes match no known byte order."); return; }
+  const rom = conv.rom;
+  step("s-read", "ok", (raw.length / 1048576).toFixed(0) + " MiB, " + conv.order);
+
+  step("s-sha", "work"); await pause();
+  let sum = "";
+  try { sum = await sha1(rom); } catch (e) { sum = ""; }
+  if (sum && sum !== ROM_SHA1) {
+    step("s-sha", "fail", "SHA-1 " + sum + ". This is not the original Glover (USA) ROM. The patch only fits that ROM; a hacked, PAL or Japanese copy will not work.");
+    return;
+  }
+  step("s-sha", "ok", sum ? "SHA-1 " + sum + ", the original USA ROM" : "This browser cannot compute SHA-1 here; each patched word is still checked below.");
+
+  step("s-cic", "work"); await pause();
+  const header = [word(rom, 0x10), word(rom, 0x14)];
+  const cic = Object.keys(CIC_SEEDS).find((c) => { const v = checksum(rom, c); return v[0] === header[0] && v[1] === header[1]; });
+  if (!cic) { step("s-cic", "fail", "The header checksum matches no known boot chip, so the ROM is damaged."); return; }
+  step("s-cic", "ok", "CIC-" + cic + ", header checksum " + hex8(header[0]) + " " + hex8(header[1]));
+
+  step("s-patch", "work"); await pause();
+  const original = rom.slice();
+  for (const [off, old, neu] of EDITS) {
+    if (old !== null && word(original, off) !== old >>> 0) {
+      step("s-patch", "fail", "The word at " + hex8(off) + " is " + hex8(word(original, off)) + ", not " + hex8(old) + ". Nothing was saved.");
+      return;
+    }
+    if (neu !== null) putWord(rom, off, neu >>> 0);
+  }
+  let changed = 0;
+  for (let i = 0; i < rom.length; i += 4) if (word(rom, i) !== word(original, i)) changed++;
+  step("s-patch", "ok", changed + " words changed; every known original word matched");
+
+  step("s-crc", "work"); await pause();
+  const [c1, c2] = checksum(rom, cic);
+  putWord(rom, 0x10, c1); putWord(rom, 0x14, c2);
+  step("s-crc", "ok", hex8(c1) + " " + hex8(c2));
+
+  result = { rom, original, base: file.name.replace(/\.(z64|v64|n64|rom|bin)$/i, "") };
+  $("save-rom").disabled = false; $("save-ips").disabled = false;
+  $("note").textContent = "Done. Save the debug ROM, or an IPS patch that turns the original .z64 ROM into it.";
+}
+
+// Saving: in the Claude viewer through the downloads capability, which takes .zip but not .z64 or .ips;
+// opened as a local file, through a plain download link.
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_TABLE[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(name, data) {
+  const fn = new TextEncoder().encode(name), crc = crc32(data);
+  const local = new Uint8Array(30 + fn.length), central = new Uint8Array(46 + fn.length), endRec = new Uint8Array(22);
+  const L = new DataView(local.buffer), C = new DataView(central.buffer), E = new DataView(endRec.buffer);
+  L.setUint32(0, 0x04034b50, true); L.setUint16(4, 20, true); L.setUint32(14, crc, true);
+  L.setUint32(18, data.length, true); L.setUint32(22, data.length, true); L.setUint16(26, fn.length, true); local.set(fn, 30);
+  C.setUint32(0, 0x02014b50, true); C.setUint16(4, 20, true); C.setUint16(6, 20, true); C.setUint32(16, crc, true);
+  C.setUint32(20, data.length, true); C.setUint32(24, data.length, true); C.setUint16(28, fn.length, true); central.set(fn, 46);
+  E.setUint32(0, 0x06054b50, true); E.setUint16(8, 1, true); E.setUint16(10, 1, true);
+  E.setUint32(12, central.length, true); E.setUint32(16, local.length + data.length, true);
+  return new Blob([local, data, central, endRec]);
+}
+
+let downloads = null;
+const inViewer = !!(window.claude && typeof window.claude.use === "function");
+if (inViewer) window.claude.use("downloads").then((d) => { downloads = d; }).catch(() => { downloads = null; });
+
+function note(text, bad) { $("note").textContent = text; $("note").className = bad ? "note bad" : "note"; }
+
+async function offer(name, data) {
+  if (inViewer) {
+    if (!downloads) { note("Saving is not available in this view. Open tools/patches/debugpatch.html from the repository in a browser instead.", true); return; }
+    try {
+      const bytes = data instanceof Blob ? new Uint8Array(await data.arrayBuffer()) : data;
+      await downloads.save({ filename: name + ".zip", data: zip(name, bytes) });
+      note("Saved " + name + " inside " + name + ".zip.");
+    } catch (err) {
+      note(err && err.code === "declined" ? "Not saved." : "Could not save: " + ((err && err.message) || err), !(err && err.code === "declined"));
+    }
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data]));
+  a.download = name;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  note("Saved " + name + ".");
+}
+
+$("save-rom").addEventListener("click", () => result && offer(result.base + "-debug.z64", result.rom));
+$("save-ips").addEventListener("click", () => result && offer(result.base + "-debug.ips", ips(result.original, result.rom)));
+
+$("file").addEventListener("change", (ev) => { const f = ev.target.files[0]; ev.target.value = ""; if (f) patch(f); });
+const drop = $("drop");
+["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (ev) => { ev.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((t) => drop.addEventListener(t, () => drop.classList.remove("over")));
+drop.addEventListener("drop", (ev) => { ev.preventDefault(); ev.stopPropagation(); const f = ev.dataTransfer.files[0]; if (f) patch(f); });
+// A file dropped anywhere else on the page should not open in the browser instead.
+window.addEventListener("dragover", (ev) => ev.preventDefault());
+window.addEventListener("drop", (ev) => { ev.preventDefault(); const f = ev.dataTransfer && ev.dataTransfer.files[0]; if (f) patch(f); });
+</script>
+</body>
+</html>

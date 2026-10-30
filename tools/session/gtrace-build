@@ -1,0 +1,17 @@
+#!/bin/bash
+# gtrace-build: build a copy of cc1 with decision traces (gtrace.patch) into tools/gcc-trace, for explain.py.
+# Its output is identical to the shipped cc1 unless GTRACE is set.
+. "$(dirname "$0")/env.sh"
+set -e
+src="$GW/tools/gcc-trace-src"
+if [ ! -d "$src" ]; then
+    cp -a "$GW/tools/mips-gcc-2.7.2" "$src"
+    (cd "$src" && patch -p1 < "$GW/tools/session/gtrace.patch")
+fi
+cd "$src"
+rm -f local-alloc.o global.o sched.o reorg.o jump.o
+make cc1 CC="gcc -m32" > /dev/null 2>&1
+mkdir -p "$GW/tools/gcc-trace"
+for x in as cpp gcc; do ln -sf "$GW/tools/gcc-2.7.2/$x" "$GW/tools/gcc-trace/$x"; done
+ln -sf "$src/cc1" "$GW/tools/gcc-trace/cc1"
+echo "built $GW/tools/gcc-trace/cc1"

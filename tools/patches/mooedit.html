@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glover Moo Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a tracker-style tool. Toolbar, then a summary strip, then the player (controller beside the
+   button lanes, with tape-deck transport), then the event list that edits them. Colours follow the N64
+   controller's own buttons. */
+:root {
+  --bg: #f3f4f7;
+  --panel: #ffffff;
+  --ink: #1d2230;
+  --muted: #5d6578;
+  --line: #d9dce5;
+  --lane: #eceef3;
+  --accent: #3b4fd8;
+  --accent-ink: #ffffff;
+  --btn-a: #2f5fd0;
+  --btn-b: #1f9a55;
+  --btn-start: #d23a3a;
+  --btn-c: #d9a400;
+  --btn-grey: #6b7285;
+  --warn-bg: #fff4d6;
+  --warn-ink: #7a5600;
+  --bad: #c42b2b;
+  --rec: #e0322f;
+  /* The controller drawing keeps the in-game demo controller's colours in both themes. */
+  --pad-body: #cdd0d7;
+  --pad-edge: #8c929e;
+  --pad-plate: #e4e6eb;
+  --pad-navy: #26346a;
+  --pad-line: #1a2246;
+  --pad-label: #ffffff;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141b; --panel: #1b1e28; --ink: #e6e8ef; --muted: #9aa1b4; --line: #2e3242; --lane: #232736;
+    --accent: #8b9bff; --accent-ink: #10132a; --btn-a: #6d93ff; --btn-b: #4cc985; --btn-start: #ff6b6b;
+    --btn-c: #f2c53d; --btn-grey: #a3a9bb; --warn-bg: #3a3014; --warn-ink: #f2d27a; --bad: #ff7b7b; --rec: #ff5a52;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141b; --panel: #1b1e28; --ink: #e6e8ef; --muted: #9aa1b4; --line: #2e3242; --lane: #232736;
+  --accent: #8b9bff; --accent-ink: #10132a; --btn-a: #6d93ff; --btn-b: #4cc985; --btn-start: #ff6b6b;
+  --btn-c: #f2c53d; --btn-grey: #a3a9bb; --warn-bg: #3a3014; --warn-ink: #f2d27a; --bad: #ff7b7b; --rec: #ff5a52;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body);
+  padding-inline: 16px; padding-block: 20px 40px;
+}
+main { max-width: 1100px; margin: 0 auto; display: grid; gap: 18px; }
+h1 { font: 600 1.7rem/1.1 var(--font-display); margin: 0; letter-spacing: 0.01em; text-wrap: balance; }
+h2 { font: 600 0.8rem/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.intro { display: grid; gap: 6px; }
+.intro p { color: var(--muted); }
+code, .mono { font-family: var(--font-data); font-size: 0.9em; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin-inline: 4px; }
+button, .file, select {
+  font: 500 0.9rem var(--font-body); color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+}
+button:hover, .file:hover { border-color: var(--accent); }
+button:focus-visible, .file:focus-within, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.file { position: relative; display: inline-block; }
+
+.status { min-height: 1.5em; color: var(--muted); font-size: 0.9rem; }
+.status.bad { color: var(--bad); }
+
+.summary { display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: baseline; }
+.summary div { display: grid; }
+.summary dt { font: 600 0.7rem var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.summary dd { margin: 0; font: 500 1.05rem var(--font-data); font-variant-numeric: tabular-nums; }
+.summary .name dd { font-family: var(--font-display); font-size: 1.15rem; }
+dl { margin: 0; }
+
+.warnings { display: grid; gap: 4px; }
+.warnings p { background: var(--warn-bg); color: var(--warn-ink); padding: 6px 10px; border-radius: 6px; max-width: none; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.zoom { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; }
+.timeline { display: grid; grid-template-columns: auto 1fr; min-width: 0; }
+.lanes { display: grid; padding-top: 22px; }
+.lanes span { height: 18px; font: 500 0.72rem/18px var(--font-data); color: var(--muted); padding-right: 8px; text-align: right; white-space: nowrap; }
+.scroller { overflow-x: auto; min-width: 0; border-left: 1px solid var(--line); }
+canvas { display: block; cursor: crosshair; }
+.hint { color: var(--muted); font-size: 0.85rem; }
+.transport { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.transport button { display: inline-flex; align-items: center; gap: 6px; }
+.transport svg { width: 12px; height: 12px; fill: currentColor; }
+.transport #rec svg { fill: var(--rec); }
+.transport #rec[aria-pressed="true"] { background: var(--rec); border-color: var(--rec); color: var(--accent-ink); }
+.transport #rec[aria-pressed="true"] svg { fill: currentColor; }
+.transport #play[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.counter { font: 500 1rem var(--font-data); font-variant-numeric: tabular-nums; padding-inline: 6px; }
+.counter small { color: var(--muted); font-size: 0.8rem; }
+.player { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .player { grid-template-columns: minmax(0, 1fr); } }
+.pad { display: grid; gap: 8px; justify-items: center; }
+.pad svg { width: 100%; max-width: 320px; height: auto; }
+.pad .body { fill: var(--pad-body); stroke: var(--pad-edge); stroke-width: 2.5; stroke-linejoin: round; }
+.pad .navy { fill: var(--pad-navy); }
+.pad .plate { fill: var(--pad-plate); stroke: var(--pad-edge); stroke-width: 1.5; }
+.pad .gate { fill: var(--pad-plate); }
+#pad-draw .b { fill: var(--d); stroke: var(--pad-line); stroke-width: 1.5; transition: fill 50ms linear; }
+#pad-draw .b.on { fill: var(--c); filter: drop-shadow(0 0 6px var(--c)); }
+.pad svg[hidden] { display: none; }
+#pad-img image { image-rendering: pixelated; }
+#pad-img .b { fill: var(--c); opacity: 0; mix-blend-mode: screen; transition: opacity 50ms linear; }
+#pad-img .b.on { opacity: 0.9; filter: drop-shadow(0 0 3px var(--c)); }
+.pad text { font: 700 10px var(--font-display); fill: var(--pad-label); pointer-events: none; text-anchor: middle; dominant-baseline: central; }
+.keys { display: grid; grid-template-columns: auto auto; gap: 2px 12px; font-size: 0.82rem; color: var(--muted); }
+.keys kbd { font: 500 0.78rem var(--font-data); color: var(--ink); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--bg); }
+.mode { font: 600 0.72rem var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.mode.recording { background: var(--rec); border-color: var(--rec); color: var(--accent-ink); }
+.mode.playing { border-color: var(--accent); color: var(--accent); }
+
+.table-wrap { overflow: auto; min-width: 0; max-height: min(70vh, 640px); }
+thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th { font: 600 0.7rem var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: left; padding: 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr.sel td { background: var(--lane); }
+tr.err td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
+input[type="number"] {
+  width: 6.5em; font: 500 0.9rem var(--font-data); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.chip {
+  font: 500 0.72rem var(--font-data); min-width: 2.4em; padding: 3px 5px; border-radius: 4px;
+  background: transparent; color: var(--muted); border: 1px solid var(--line);
+}
+.chip[aria-pressed="true"] { color: var(--accent-ink); border-color: transparent; background: var(--chip, var(--btn-grey)); }
+.rowbtns { display: flex; gap: 4px; justify-content: flex-end; }
+.rowbtns button { padding: 3px 8px; font-size: 0.8rem; }
+.empty { color: var(--muted); padding: 10px 6px; }
+
+details summary { cursor: pointer; font: 600 0.8rem var(--font-display); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+pre { font: 0.82rem/1.5 var(--font-data); margin: 10px 0 0; overflow-x: auto; white-space: pre; }
+.about { display: grid; gap: 8px; color: var(--muted); font-size: 0.92rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="intro">
+    <h1>Glover Moo Editor</h1>
+    <p>View and edit Glover's input recordings: the <code>.moo</code> files that the debug patch saves, and the
+      demo recordings stored in the ROM. Each event sets the buttons held from its frame until the next event.</p>
+  </header>
+
+  <div class="toolbar" role="toolbar" aria-label="File">
+    <label class="file">Open .moo<input type="file" id="open-moo" accept=".moo,application/octet-stream"></label>
+    <label class="file">Open ROM<input type="file" id="open-rom" accept=".z64,.v64,.n64"></label>
+    <select id="rom-pick" aria-label="Recording in the ROM" hidden></select>
+    <span class="sep" aria-hidden="true"></span>
+    <button id="new">New</button>
+    <button id="save-moo" class="primary">Save .moo</button>
+    <button id="save-rom" hidden>Save ROM</button>
+  </div>
+  <p class="status" id="status" role="status"></p>
+
+  <dl class="summary" id="summary"></dl>
+  <div class="warnings" id="warnings"></div>
+
+  <section class="panel" aria-labelledby="tl-h">
+    <div class="panel-head">
+      <h2 id="tl-h">Player</h2>
+      <span class="mode" id="mode" aria-live="polite">Stopped</span>
+    </div>
+    <div class="transport" role="toolbar" aria-label="Playback">
+      <button id="play" aria-pressed="false"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1l9 5-9 5z"/></svg>Play</button>
+      <button id="pause"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1h3v10H2zM7 1h3v10H7z"/></svg>Pause</button>
+      <button id="rec" aria-pressed="false"><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/></svg>Record</button>
+      <button id="stop"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5h9v9h-9z"/></svg>Stop</button>
+      <span class="counter" id="counter">frame 0</span>
+      <select id="rate" aria-label="Game speed">
+        <option value="20">NTSC, 20 frames/s</option>
+        <option value="16.6667">PAL, 16.7 frames/s</option>
+      </select>
+    </div>
+    <div class="player">
+      <div class="pad">
+        <svg id="pad-img" viewBox="0 0 186 176" role="img" aria-labelledby="pad-img-t" hidden>
+          <title id="pad-img-t">N64 controller from the game's demos: the buttons held at the playhead light up</title>
+          <image href="mooedit-pad.png" width="186" height="176"/>
+          <rect class="b" data-b="L" x="16" y="11" width="36" height="16" rx="5" style="--c: #8fa8ff"/>
+          <rect class="b" data-b="R" x="134" y="11" width="36" height="16" rx="5" style="--c: #8fa8ff"/>
+          <rect class="b" data-b="D&#8593;" x="34" y="41" width="8" height="10" rx="1" style="--c: #8fa8ff"/>
+          <rect class="b" data-b="D&#8595;" x="34" y="57" width="8" height="10" rx="1" style="--c: #8fa8ff"/>
+          <rect class="b" data-b="D&#8592;" x="24" y="50" width="10" height="8" rx="1" style="--c: #8fa8ff"/>
+          <rect class="b" data-b="D&#8594;" x="42" y="50" width="10" height="8" rx="1" style="--c: #8fa8ff"/>
+          <circle class="b" data-b="Start" cx="95" cy="58" r="7.5" style="--c: #ff6a5a"/>
+          <circle class="b" data-b="B" cx="122.5" cy="58" r="7.5" style="--c: #5cff7a"/>
+          <circle class="b" data-b="A" cx="136" cy="71.5" r="7.5" style="--c: #6a9cff"/>
+          <circle class="b" data-b="C&#8593;" cx="151" cy="34" r="6.5" style="--c: #ffd84a"/>
+          <circle class="b" data-b="C&#8595;" cx="151" cy="59" r="6.5" style="--c: #ffd84a"/>
+          <circle class="b" data-b="C&#8592;" cx="139" cy="46.5" r="6.5" style="--c: #ffd84a"/>
+          <circle class="b" data-b="C&#8594;" cx="164" cy="46.5" r="6.5" style="--c: #ffd84a"/>
+          <rect class="b" data-b="Z" x="84" y="124" width="19" height="19" rx="2" style="--c: #8fa8ff"/>
+        </svg>
+        <svg id="pad-draw" viewBox="20 24 360 296" role="img" aria-labelledby="pad-t">
+          <title id="pad-t">N64 controller as drawn in the game's demos: the buttons held at the playhead light up</title>
+          <rect class="b" data-b="L" x="56" y="36" width="76" height="22" rx="10" style="--d: var(--pad-navy); --c: #7d9bff"/>
+          <rect class="b" data-b="R" x="268" y="36" width="76" height="22" rx="10" style="--d: var(--pad-navy); --c: #7d9bff"/>
+          <path class="body" d="M70 50 C118 40 158 42 172 48 L228 48 C242 42 282 40 330 50 C354 55 366 72 366 98 C366 126 356 150 338 162 L332 238 C330 260 318 270 303 270 C288 270 278 260 276 240 L268 174 C258 167 248 167 240 174 L233 282 C231 304 217 312 200 312 C183 312 169 304 167 282 L160 174 C152 167 142 167 132 174 L124 240 C122 260 112 270 97 270 C82 270 70 260 68 238 L62 162 C44 150 34 126 34 98 C34 72 46 55 70 50 Z"/>
+          <rect class="plate" x="168" y="56" width="64" height="16" rx="8"/>
+          <rect class="b" data-b="D&#8593;" x="90" y="78" width="22" height="26" rx="3" style="--d: var(--pad-navy); --c: #7d9bff"/>
+          <rect class="b" data-b="D&#8595;" x="90" y="124" width="22" height="26" rx="3" style="--d: var(--pad-navy); --c: #7d9bff"/>
+          <rect class="b" data-b="D&#8592;" x="66" y="103" width="26" height="22" rx="3" style="--d: var(--pad-navy); --c: #7d9bff"/>
+          <rect class="b" data-b="D&#8594;" x="110" y="103" width="26" height="22" rx="3" style="--d: var(--pad-navy); --c: #7d9bff"/>
+          <rect class="navy" x="90" y="103" width="22" height="22"/>
+          <circle class="b" data-b="Start" cx="200" cy="118" r="12" style="--d: #b8221f; --c: #ff5a4f"/>
+          <circle class="navy" cx="200" cy="186" r="28"/>
+          <polygon class="gate" points="200,165 215,171 221,186 215,201 200,207 185,201 179,186 185,171"/>
+          <circle class="navy" cx="200" cy="186" r="13"/>
+          <circle class="gate" cx="200" cy="186" r="8"/>
+          <rect class="b" data-b="Z" x="187" y="238" width="26" height="30" rx="5" style="--d: var(--pad-navy); --c: #7d9bff"/>
+          <text x="200" y="253">Z</text>
+          <circle class="b" data-b="B" cx="244" cy="117" r="12" style="--d: #1e8a32; --c: #4cf06a"/>
+          <text x="244" y="117">B</text>
+          <circle class="b" data-b="A" cx="268" cy="142" r="13" style="--d: #1f45b8; --c: #5a8cff"/>
+          <text x="268" y="142">A</text>
+          <circle class="b" data-b="C&#8593;" cx="302" cy="92" r="11" style="--d: #7a5b1c; --c: #ffd23a"/>
+          <circle class="b" data-b="C&#8595;" cx="302" cy="134" r="11" style="--d: #7a5b1c; --c: #ffd23a"/>
+          <circle class="b" data-b="C&#8592;" cx="281" cy="113" r="11" style="--d: #7a5b1c; --c: #ffd23a"/>
+          <circle class="b" data-b="C&#8594;" cx="323" cy="113" r="11" style="--d: #7a5b1c; --c: #ffd23a"/>
+          <text x="88" y="45">L</text><text x="312" y="45">R</text>
+        </svg>
+        <div class="keys" id="keys" aria-label="Keyboard"></div>
+      </div>
+      <div class="timeline">
+        <div class="lanes" id="lanes" aria-hidden="true"></div>
+        <div class="scroller" id="scroller"><canvas id="canvas" role="img" aria-label="Buttons held over time"></canvas></div>
+      </div>
+    </div>
+    <div class="panel-head">
+      <p class="hint">Click the lanes to move the playhead. Space plays and pauses. Record replaces everything from the
+        playhead on with the keys you hold, sampled once per game frame. Playback has no analogue stick: the game
+        steers with the D-pad.</p>
+      <label class="zoom" for="zoom">Zoom <input type="range" id="zoom" min="0" max="100" value="40"></label>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="ev-h">
+    <div class="panel-head">
+      <h2 id="ev-h">Events</h2>
+      <div class="rowbtns"><button id="add">Add event after selection</button></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Frame</th><th>Buttons held from this frame</th><th><span class="sr">Actions</span></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <details>
+      <summary>Bytes</summary>
+      <pre id="hex"></pre>
+    </details>
+  </section>
+
+  <section class="about">
+    <h2>Format</h2>
+    <p>A <code>.moo</code> file starts with a 32-bit size that counts itself, rounded up to 16 bytes. Then come pairs
+      of 16-bit values: the frame number, and the controller's button word from that frame. A frame of
+      <code>FFFF</code> ends the list. All values are big-endian. The game starts reading at frame 9, matches each
+      frame exactly, and leaves the level 20 frames after the last event.</p>
+    <p>In the ROM, the recordings sit one after another at <code>0x77BBE0</code>, one for each level number up to
+      43. Save ROM writes them back in the same 0x2240-byte space; that area is outside the header checksum.</p>
+  </section>
+</main>
+
+<script>
+"use strict";
+// Button order and bits as in the game's buttonFlag table.
+const BUTTONS = [
+  { name: "A", bit: 0x8000, colour: "--btn-a", code: "KeyX", key: "X" },
+  { name: "B", bit: 0x4000, colour: "--btn-b", code: "KeyC", key: "C" },
+  { name: "Z", bit: 0x2000, colour: "--btn-grey", code: "KeyZ", key: "Z" },
+  { name: "Start", bit: 0x1000, colour: "--btn-start", code: "Enter", key: "Enter" },
+  { name: "L", bit: 0x0020, colour: "--btn-grey", code: "KeyQ", key: "Q" },
+  { name: "R", bit: 0x0010, colour: "--btn-grey", code: "KeyE", key: "E" },
+  { name: "D↑", bit: 0x0800, colour: "--btn-grey", code: "ArrowUp", key: "↑" },
+  { name: "D↓", bit: 0x0400, colour: "--btn-grey", code: "ArrowDown", key: "↓" },
+  { name: "D←", bit: 0x0200, colour: "--btn-grey", code: "ArrowLeft", key: "←" },
+  { name: "D→", bit: 0x0100, colour: "--btn-grey", code: "ArrowRight", key: "→" },
+  { name: "C↑", bit: 0x0008, colour: "--btn-c", code: "KeyI", key: "I" },
+  { name: "C↓", bit: 0x0004, colour: "--btn-c", code: "KeyK", key: "K" },
+  { name: "C←", bit: 0x0002, colour: "--btn-c", code: "KeyJ", key: "J" },
+  { name: "C→", bit: 0x0001, colour: "--btn-c", code: "KeyL", key: "L" },
+];
+const LEVELS = ["HUB1", "HUB2", "HUB3", "HUB4", "HUB5", "HUB6", "HUB7", "HUB8", "CAVE", "ACOURSE",
+  "ATLANTIS1", "ATLANTIS2", "ATLANTIS3A", "ATLANTISBOSS", "ATLANTISBONUS",
+  "CARNIVAL1", "CARNIVAL2A", "CARNIVAL3A", "CARNIVALBOSS", "CARNIVALBONUS",
+  "PIRATES1", "PIRATES2A", "PIRATES3B", "PIRATESBOSS", "PIRATESBONUS",
+  "PREHISTORIC1A", "PREHISTORIC2A", "PREHISTORIC3B", "PREHISTORICBOSS", "PREHISTORICBONUS",
+  "FEAR1A", "FEAR2A", "FEAR3B", "FEARBOSS", "FEARBONUS",
+  "SPACE2A", "SPACE2B", "SPACE3", "SPACEBOSS1", "SPACEBOSS_TWEEN", "SPACEBOSS3", "SPACEBONUS",
+  "WAYROOM", "PRESENT"];
+const ROM_SHA1 = "270be17b3c8da9b88a7b99c2a545b0bce16837f4";
+const TABLE_START = 0x77BBE0, TABLE_END = 0x77DE20;
+const FIRST_FRAME = 9, END_DELAY = 20, LANE_H = 18, AXIS_H = 22, MAX_FRAME = 65534;
+// Example: a recording made in Atlantis 1 while testing the debug patch in an emulator.
+const EXAMPLE = "00000040004100000044800000460000004e80000050000000588000005a00000062800000640000006c8000006e00000076800000780000ffff02af7ca21ece";
+
+const state = { name: "ATLANTIS_1.moo (example)", events: [], selected: 0, rom: null, romIndex: -1, nextId: 1 };
+// The player: mode is "stopped", "playing", "paused", "recording" or "recpaused".
+const player = { mode: "stopped", frame: 0, keys: 0, latch: 0, last: 0, carry: 0, recStart: 0, recButtons: 0 };
+const $ = (id) => document.getElementById(id);
+
+function parseMoo(bytes) {
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const warnings = [];
+  if (bytes.length < 6) throw new Error("The file is too short to be a recording (" + bytes.length + " bytes).");
+  const size = v.getUint32(0);
+  if (size > bytes.length) warnings.push("The size word says " + size + " bytes, but the file has " + bytes.length + ".");
+  const end = Math.min(size, bytes.length);
+  const events = [];
+  let i = 4, ended = false;
+  while (i + 2 <= end) {
+    const frame = v.getUint16(i);
+    if (frame === 0xFFFF) { ended = true; break; }
+    if (i + 4 > end) break;
+    events.push({ id: state.nextId++, frame, buttons: v.getUint16(i + 2) });
+    i += 4;
+  }
+  if (!ended) warnings.push("The end marker (FFFF) is missing. Saving adds it.");
+  return { events, warnings };
+}
+
+function serialise(events) {
+  const used = 4 + events.length * 4 + 2;
+  const size = Math.ceil(used / 16) * 16;
+  const out = new Uint8Array(size);
+  const v = new DataView(out.buffer);
+  v.setUint32(0, size);
+  events.forEach((e, k) => { v.setUint16(4 + k * 4, e.frame); v.setUint16(6 + k * 4, e.buttons); });
+  v.setUint16(4 + events.length * 4, 0xFFFF);
+  return out;
+}
+
+function problems(events) {
+  const bad = new Set(), notes = [];
+  events.forEach((e, k) => {
+    if (e.frame < FIRST_FRAME) { bad.add(e.id); notes.push("Frame " + e.frame + " is before frame " + FIRST_FRAME + ", where playback starts. The game never reaches it, so playback stops there."); }
+    if (e.frame >= 0xFFFF) { bad.add(e.id); notes.push("Frame " + e.frame + " is too large. The highest frame is 65534."); }
+    if (k > 0 && e.frame === events[k - 1].frame) { bad.add(e.id); notes.push("Two events are at frame " + e.frame + ". The game reads only one event per frame, so the second one stalls playback."); }
+  });
+  return { bad, notes };
+}
+
+function hexToBytes(h) { const b = new Uint8Array(h.length / 2); for (let i = 0; i < b.length; i++) b[i] = parseInt(h.substr(i * 2, 2), 16); return b; }
+const hex4 = (n) => n.toString(16).toUpperCase().padStart(4, "0");
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+function setStatus(text, bad) { const s = $("status"); s.textContent = text; s.classList.toggle("bad", !!bad); }
+
+function sortEvents() {
+  const sel = state.events[state.selected];
+  state.events.sort((a, b) => a.frame - b.frame);
+  state.selected = Math.max(0, state.events.indexOf(sel));
+}
+
+function render() {
+  const { bad, notes } = problems(state.events);
+  const last = state.events.length ? state.events[state.events.length - 1].frame : 0;
+  const bytes = serialise(state.events);
+  const summary = [
+    ["name", "Recording", state.name],
+    ["", "Events", state.events.length],
+    ["", "Last event", "frame " + last],
+    ["", "Level ends", state.events.length ? "frame " + (last + END_DELAY) : "–"],
+    ["", "Size", bytes.length + " bytes"],
+  ];
+  const dl = $("summary");
+  dl.replaceChildren(...summary.map(([cls, k, val]) => {
+    const d = document.createElement("div"); if (cls) d.className = cls;
+    const dt = document.createElement("dt"); dt.textContent = k;
+    const dd = document.createElement("dd"); dd.textContent = val;
+    d.append(dt, dd); return d;
+  }));
+  const w = $("warnings");
+  w.replaceChildren(...[...state.loadWarnings || [], ...notes].map((t) => { const p = document.createElement("p"); p.textContent = t; return p; }));
+  renderRows(bad);
+  renderHex(bytes);
+  drawTimeline();
+  $("save-rom").hidden = !state.rom;
+}
+
+function renderRows(bad) {
+  const body = $("rows");
+  if (!state.events.length) {
+    const tr = document.createElement("tr"), td = document.createElement("td");
+    td.colSpan = 3; td.className = "empty"; td.textContent = "No events. Use Add event to start a recording.";
+    tr.append(td); body.replaceChildren(tr); return;
+  }
+  body.replaceChildren(...state.events.map((e, k) => {
+    const tr = document.createElement("tr");
+    if (k === state.selected) tr.className = "sel";
+    if (bad.has(e.id)) tr.classList.add("err");
+    tr.addEventListener("click", (ev) => { if (ev.target.tagName !== "INPUT" && state.selected !== k) { state.selected = k; render(); } });
+
+    const tdF = document.createElement("td");
+    const inp = document.createElement("input");
+    inp.type = "number"; inp.min = "0"; inp.max = "65534"; inp.value = e.frame; inp.id = "frame-" + e.id;
+    inp.setAttribute("aria-label", "Frame of event " + (k + 1));
+    inp.addEventListener("focus", () => { state.selected = k; highlight(); });
+    inp.addEventListener("change", () => {
+      const n = Math.max(0, Math.min(65534, Math.round(Number(inp.value) || 0)));
+      e.frame = n; sortEvents(); render();
+      const again = $("frame-" + e.id); if (again) again.focus();
+    });
+    tdF.append(inp);
+
+    const tdB = document.createElement("td");
+    const chips = document.createElement("div"); chips.className = "chips";
+    BUTTONS.forEach((b) => {
+      const c = document.createElement("button");
+      c.className = "chip"; c.textContent = b.name;
+      c.style.setProperty("--chip", "var(" + b.colour + ")");
+      c.setAttribute("aria-pressed", e.buttons & b.bit ? "true" : "false");
+      c.setAttribute("aria-label", b.name + " at frame " + e.frame);
+      c.addEventListener("click", () => { e.buttons ^= b.bit; state.selected = k; render(); });
+      chips.append(c);
+    });
+    const other = e.buttons & ~BUTTONS.reduce((m, b) => m | b.bit, 0);
+    if (other) { const s = document.createElement("span"); s.className = "mono"; s.textContent = "+" + hex4(other); s.title = "Bits with no button"; chips.append(s); }
+    tdB.append(chips);
+
+    const tdA = document.createElement("td");
+    const acts = document.createElement("div"); acts.className = "rowbtns";
+    const del = document.createElement("button"); del.textContent = "Delete";
+    del.setAttribute("aria-label", "Delete the event at frame " + e.frame);
+    del.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      state.events.splice(k, 1);
+      state.selected = Math.min(state.selected, Math.max(0, state.events.length - 1));
+      render();
+    });
+    acts.append(del); tdA.append(acts);
+    tr.append(tdF, tdB, tdA);
+    return tr;
+  }));
+}
+
+function highlight() {
+  [...$("rows").children].forEach((tr, k) => tr.classList.toggle("sel", k === state.selected));
+  drawTimeline();
+}
+
+function renderHex(bytes) {
+  const lines = [];
+  for (let i = 0; i < bytes.length; i += 16) {
+    const row = [...bytes.slice(i, i + 16)].map((b) => b.toString(16).toUpperCase().padStart(2, "0"));
+    lines.push(i.toString(16).toUpperCase().padStart(4, "0") + "  " + row.join(" "));
+  }
+  $("hex").textContent = lines.join("\n");
+}
+
+function scale() {
+  const z = Number($("zoom").value) / 100;
+  return 0.25 * Math.pow(48, z); // 0.25 to 12 pixels per frame
+}
+
+// Zoom so that the whole recording fits the visible width.
+function fitZoom() {
+  const frames = (state.events.length ? state.events[state.events.length - 1].frame : 100) + END_DELAY + 10;
+  const px = Math.max(0.25, Math.min(12, ($("scroller").clientWidth || 800) / frames));
+  $("zoom").value = String(Math.round(100 * Math.log(px / 0.25) / Math.log(48)));
+}
+
+function drawTimeline() {
+  const canvas = $("canvas"), scroller = $("scroller");
+  const px = scale();
+  const last = Math.max(player.frame + 40, state.events.length ? state.events[state.events.length - 1].frame + END_DELAY : 100);
+  const width = Math.max(scroller.clientWidth, Math.ceil(last * px) + 40);
+  const height = AXIS_H + LANE_H * BUTTONS.length;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr; canvas.height = height * dpr;
+  canvas.style.width = width + "px"; canvas.style.height = height + "px";
+  const g = canvas.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = css("--panel"); g.fillRect(0, 0, width, height);
+  BUTTONS.forEach((b, i) => { if (i % 2 === 0) { g.fillStyle = css("--lane"); g.fillRect(0, AXIS_H + i * LANE_H, width, LANE_H); } });
+
+  // Axis: a tick every step frames, labelled.
+  const step = [10, 20, 50, 100, 200, 500, 1000, 2000].find((s) => s * px >= 60) || 5000;
+  g.font = "11px " + css("--font-data"); g.textBaseline = "middle";
+  for (let f = 0; f * px < width; f += step) {
+    const x = Math.round(f * px) + 0.5;
+    g.fillStyle = css("--line"); g.fillRect(x, AXIS_H - 6, 1, height - AXIS_H + 6);
+    g.fillStyle = css("--muted"); g.fillText(String(f), x + 3, 10);
+  }
+  // Frame 9: where playback starts.
+  g.fillStyle = css("--muted"); g.globalAlpha = 0.18; g.fillRect(0, AXIS_H, FIRST_FRAME * px, height - AXIS_H); g.globalAlpha = 1;
+
+  // Held intervals.
+  state.events.forEach((e, k) => {
+    const to = k + 1 < state.events.length ? state.events[k + 1].frame : e.frame + END_DELAY;
+    BUTTONS.forEach((b, i) => {
+      if (!(e.buttons & b.bit)) return;
+      g.fillStyle = css(b.colour);
+      g.fillRect(e.frame * px, AXIS_H + i * LANE_H + 4, Math.max(1.5, (to - e.frame) * px), LANE_H - 8);
+    });
+  });
+  // Event markers and the selection.
+  state.events.forEach((e, k) => {
+    const x = Math.round(e.frame * px) + 0.5;
+    g.fillStyle = k === state.selected ? css("--accent") : css("--muted");
+    g.globalAlpha = k === state.selected ? 1 : 0.5;
+    g.fillRect(x - (k === state.selected ? 1 : 0), AXIS_H, k === state.selected ? 2 : 1, height - AXIS_H);
+    g.globalAlpha = 1;
+  });
+  if (state.events.length) {
+    const end = state.events[state.events.length - 1].frame + END_DELAY;
+    g.fillStyle = css("--bad"); g.fillRect(Math.round(end * px), AXIS_H, 2, height - AXIS_H);
+  }
+  // The playhead.
+  const ph = Math.round(player.frame * px);
+  g.fillStyle = player.mode.startsWith("rec") ? css("--rec") : css("--ink");
+  g.fillRect(ph - 1, 0, 2, height);
+  g.beginPath(); g.moveTo(ph - 6, 0); g.lineTo(ph + 6, 0); g.lineTo(ph, 8); g.closePath(); g.fill();
+}
+
+function load(name, bytes, romIndex) {
+  const { events, warnings } = parseMoo(bytes);
+  stopPlayer(true);
+  state.name = name; state.events = events; state.selected = 0; state.loadWarnings = warnings;
+  if (romIndex === undefined) { state.romIndex = -1; $("rom-pick").value = ""; }
+  fitZoom();
+  render();
+}
+
+// File input
+$("open-moo").addEventListener("change", async (ev) => {
+  const f = ev.target.files[0]; ev.target.value = "";
+  if (!f) return;
+  try { load(f.name, new Uint8Array(await f.arrayBuffer())); setStatus("Opened " + f.name + "."); }
+  catch (err) { setStatus(err.message, true); }
+});
+
+function toZ64(b) {
+  const m = (b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3]) >>> 0;
+  if (m === 0x80371240) return b;
+  const out = new Uint8Array(b.length);
+  if (m === 0x37804012) { for (let i = 0; i + 1 < b.length; i += 2) { out[i] = b[i + 1]; out[i + 1] = b[i]; } return out; }
+  if (m === 0x40123780) { for (let i = 0; i + 3 < b.length; i += 4) { out[i] = b[i + 3]; out[i + 1] = b[i + 2]; out[i + 2] = b[i + 1]; out[i + 3] = b[i]; } return out; }
+  throw new Error("This is not an N64 ROM: its first bytes match no known byte order.");
+}
+
+function romTable(rom) {
+  const v = new DataView(rom.buffer, rom.byteOffset, rom.byteLength);
+  const entries = [];
+  let o = TABLE_START;
+  while (o < TABLE_END && entries.length < LEVELS.length) {
+    const size = v.getUint32(o);
+    if (size < 6 || o + size > TABLE_END) break;
+    entries.push(rom.slice(o, o + size));
+    o += size;
+  }
+  if (entries.length !== LEVELS.length || o !== TABLE_END) throw new Error("The recording table is not where Glover (USA) keeps it. Open the USA ROM.");
+  return entries;
+}
+
+$("open-rom").addEventListener("change", async (ev) => {
+  const f = ev.target.files[0]; ev.target.value = "";
+  if (!f) return;
+  try {
+    const rom = toZ64(new Uint8Array(await f.arrayBuffer()));
+    const title = new TextDecoder().decode(rom.slice(0x20, 0x34)).trim();
+    const entries = romTable(rom);
+    let sha = "";
+    try { sha = [...new Uint8Array(await crypto.subtle.digest("SHA-1", rom))].map((b) => b.toString(16).padStart(2, "0")).join(""); } catch (e) { sha = ""; }
+    state.rom = { name: f.name, bytes: rom, entries };
+    const pick = $("rom-pick");
+    pick.replaceChildren(...LEVELS.map((lv, i) => {
+      const n = parseMoo(entries[i]).events.length;
+      const o = document.createElement("option"); o.value = String(i);
+      o.textContent = i + " " + lv + (n ? " – " + n + " events" : " – empty");
+      return o;
+    }));
+    pick.hidden = false;
+    const first = LEVELS.findIndex((_, i) => parseMoo(entries[i]).events.length);
+    pick.value = String(first); selectRom(first);
+    setStatus("Opened " + f.name + " (" + title + "). " + (sha === ROM_SHA1 ? "It is the original USA ROM." : sha ? "Its SHA-1 differs from the original USA ROM; the table was still found." : ""));
+  } catch (err) { setStatus(err.message, true); }
+});
+
+function selectRom(i) {
+  const lv = LEVELS[i];
+  state.romIndex = i;
+  load(lv + " (ROM)", state.rom.entries[i], i);
+}
+$("rom-pick").addEventListener("change", () => {
+  storeIntoRom();
+  selectRom(Number($("rom-pick").value));
+});
+
+// Keep the edits of the current ROM recording when another one is picked.
+function storeIntoRom() {
+  if (!state.rom || state.romIndex < 0) return;
+  const old = state.rom.entries[state.romIndex];
+  const now = serialise(state.events);
+  // An unchanged recording keeps its original bytes, including the leftovers after its end marker.
+  const before = serialise(parseMoo(old).events);
+  const same = now.length === before.length && now.every((b, i) => b === before[i]);
+  if (!same) state.rom.entries[state.romIndex] = now;
+}
+
+$("new").addEventListener("click", () => {
+  stopPlayer(true);
+  state.name = "new.moo"; state.events = []; state.selected = 0; state.loadWarnings = [];
+  state.romIndex = -1; if (state.rom) $("rom-pick").value = "";
+  render(); setStatus("Started an empty recording.");
+});
+
+$("add").addEventListener("click", () => {
+  const cur = state.events[state.selected];
+  const next = state.events[state.selected + 1];
+  let frame = cur ? cur.frame + 10 : 10;
+  if (next && frame >= next.frame) frame = Math.floor((cur.frame + next.frame) / 2);
+  const e = { id: state.nextId++, frame, buttons: cur ? cur.buttons : 0 };
+  state.events.push(e); sortEvents(); state.selected = state.events.indexOf(e);
+  render(); const inp = $("frame-" + e.id); if (inp) inp.focus();
+});
+
+$("canvas").addEventListener("click", (ev) => {
+  if (player.mode.startsWith("rec")) return;
+  const rect = ev.currentTarget.getBoundingClientRect();
+  seek(Math.max(0, Math.min(MAX_FRAME, Math.round((ev.clientX - rect.left) / scale()))));
+});
+$("zoom").addEventListener("input", drawTimeline);
+window.addEventListener("resize", drawTimeline);
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawTimeline);
+new MutationObserver(drawTimeline).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+// Saving: in the Claude viewer through the downloads capability, which takes .zip but not .moo or .z64;
+// opened as a local file, through a plain download link.
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_TABLE[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(name, data) {
+  const fn = new TextEncoder().encode(name), crc = crc32(data);
+  const local = new Uint8Array(30 + fn.length), central = new Uint8Array(46 + fn.length), endRec = new Uint8Array(22);
+  const L = new DataView(local.buffer), C = new DataView(central.buffer), E = new DataView(endRec.buffer);
+  L.setUint32(0, 0x04034b50, true); L.setUint16(4, 20, true); L.setUint32(14, crc, true);
+  L.setUint32(18, data.length, true); L.setUint32(22, data.length, true); L.setUint16(26, fn.length, true); local.set(fn, 30);
+  C.setUint32(0, 0x02014b50, true); C.setUint16(4, 20, true); C.setUint16(6, 20, true); C.setUint32(16, crc, true);
+  C.setUint32(20, data.length, true); C.setUint32(24, data.length, true); C.setUint16(28, fn.length, true); central.set(fn, 46);
+  E.setUint32(0, 0x06054b50, true); E.setUint16(8, 1, true); E.setUint16(10, 1, true);
+  E.setUint32(12, central.length, true); E.setUint32(16, local.length + data.length, true);
+  return new Blob([local, data, central, endRec]);
+}
+
+let downloads = null;
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("downloads").then((d) => { downloads = d; }).catch(() => { downloads = null; });
+}
+const inViewer = () => !!(window.claude && typeof window.claude.use === "function");
+
+async function offer(name, data) {
+  if (inViewer()) {
+    if (!downloads) { setStatus("Saving is not available in this view. Open the page in a browser tab, or use the tool from the repository.", true); return; }
+    try {
+      await downloads.save({ filename: name + ".zip", data: zip(name, data) });
+      setStatus("Saved " + name + " inside " + name + ".zip.");
+    } catch (err) {
+      setStatus(err && err.code === "declined" ? "Not saved." : "Could not save: " + (err && err.message || err), err && err.code !== "declined");
+    }
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([data])); a.download = name;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  setStatus("Saved " + name + ".");
+}
+
+function fileName() {
+  if (state.romIndex >= 0) return LEVELS[state.romIndex] + ".moo";
+  return state.name.replace(/ \(example\)$/, "").replace(/[^\w.\-]+/g, "_").replace(/(\.moo)?$/i, ".moo");
+}
+
+$("save-moo").addEventListener("click", () => offer(fileName(), serialise(state.events)));
+
+$("save-rom").addEventListener("click", () => {
+  storeIntoRom();
+  const r = state.rom, total = r.entries.reduce((s, e) => s + e.length, 0);
+  if (total > TABLE_END - TABLE_START) {
+    setStatus("The recordings take " + total + " bytes, but the ROM has room for " + (TABLE_END - TABLE_START) + ". Remove " + (total - (TABLE_END - TABLE_START)) + " bytes of events.", true);
+    return;
+  }
+  const out = r.bytes.slice();
+  out.fill(0, TABLE_START, TABLE_END);
+  let o = TABLE_START;
+  r.entries.forEach((e) => { out.set(e, o); o += e.length; });
+  offer(r.name.replace(/\.(z64|v64|n64)$/i, "") + "-moo.z64", out);
+});
+
+
+// ---- Player ----------------------------------------------------------------------------------------
+// The game reads one button word per game frame. NTSC runs 20 game frames a second (the game turns
+// levelFrames into seconds by dividing by 20), PAL 50/3.
+const rate = () => Number($("rate").value);
+
+function indexAt(frame) {
+  let k = -1;
+  for (let i = 0; i < state.events.length && state.events[i].frame <= frame; i++) k = i;
+  return k;
+}
+const buttonsAt = (frame) => { const k = indexAt(frame); return k < 0 ? 0 : state.events[k].buttons; };
+const endFrame = () => state.events.length ? state.events[state.events.length - 1].frame + END_DELAY : 0;
+
+function lightPad(buttons) {
+  document.querySelectorAll(".pad .b").forEach((el) => {
+    const b = BUTTONS.find((x) => x.name === el.dataset.b);
+    el.classList.toggle("on", !!(b && buttons & b.bit));
+  });
+}
+
+function showFrame() {
+  const f = player.frame;
+  const counter = $("counter");
+  counter.textContent = "frame " + f + " ";
+  const secs = document.createElement("small"); secs.textContent = (f / rate()).toFixed(1) + " s";
+  counter.append(secs);
+  const recording = player.mode.startsWith("rec");
+  lightPad(recording ? player.keys | player.latch : buttonsAt(f) | player.keys);
+  const k = indexAt(f);
+  if (k >= 0 && k !== state.selected && !recording) {
+    state.selected = k;
+    [...$("rows").children].forEach((tr, i) => tr.classList.toggle("sel", i === k));
+    const row = $("rows").children[k], wrap = row && row.closest(".table-wrap");
+    if (row && wrap) {
+      const top = row.offsetTop;
+      if (top < wrap.scrollTop + 30 || top > wrap.scrollTop + wrap.clientHeight - 40) wrap.scrollTop = top - wrap.clientHeight / 2;
+    }
+  }
+  drawTimeline();
+  // Keep the playhead in view while it moves.
+  const sc = $("scroller"), x = f * scale();
+  if ((player.mode === "playing" || player.mode === "recording") && (x < sc.scrollLeft || x > sc.scrollLeft + sc.clientWidth - 30)) {
+    sc.scrollLeft = x - 40;
+  }
+}
+
+function setMode(mode) {
+  player.mode = mode;
+  const labels = { stopped: "Stopped", playing: "Playing", paused: "Paused", recording: "Recording", recpaused: "Recording paused" };
+  const m = $("mode");
+  m.textContent = labels[mode];
+  m.className = "mode" + (mode.startsWith("rec") ? " recording" : mode === "playing" ? " playing" : "");
+  $("play").setAttribute("aria-pressed", mode === "playing" ? "true" : "false");
+  $("rec").setAttribute("aria-pressed", mode.startsWith("rec") ? "true" : "false");
+}
+
+function seek(frame) {
+  player.frame = frame;
+  const k = indexAt(frame);
+  if (k >= 0) { state.selected = k; highlight(); }
+  showFrame();
+}
+
+function tick(now) {
+  if (player.mode !== "playing" && player.mode !== "recording") return;
+  const dt = Math.min(0.25, Math.max(0, now - player.last) / 1000);
+  player.last = now;
+  player.carry += dt * rate();
+  while (player.carry >= 1) {
+    player.carry -= 1;
+    player.frame++;
+    if (player.mode === "recording") {
+      recordFrame();
+    } else if (player.frame >= endFrame()) {
+      setMode("paused");
+      break;
+    }
+    if (player.frame >= MAX_FRAME) {
+      if (player.mode === "recording") finishRecording();
+      setMode("paused");
+      break;
+    }
+  }
+  showFrame();
+  requestAnimationFrame(tick);
+}
+
+function run(mode) {
+  setMode(mode);
+  player.last = performance.now();
+  requestAnimationFrame(tick);
+}
+
+// Recording takes one sample per game frame, like the game's recorder. A key tapped between two
+// frames still counts for one frame (the latch).
+function recordFrame() {
+  const now = player.keys | player.latch;
+  player.latch = 0;
+  if (now !== player.recButtons) {
+    state.events.push({ id: state.nextId++, frame: player.frame, buttons: now });
+    player.recButtons = now;
+    state.selected = state.events.length - 1;
+    render();
+  }
+}
+
+function startRecording() {
+  const start = Math.max(FIRST_FRAME, player.frame);
+  player.recStart = start;
+  state.events = state.events.filter((e) => e.frame < start);
+  player.recButtons = buttonsAt(start - 1);
+  player.frame = start - 1;
+  player.carry = 1; // the first sample is taken at once, at the start frame
+  state.loadWarnings = [];
+  render();
+  setStatus("Recording from frame " + start + ". Hold the keys listed under the controller, then press Stop.");
+}
+
+// The game ends playback 20 frames after the last event, so an event at the stop frame keeps the
+// recording as long as it was.
+function finishRecording() {
+  const last = state.events[state.events.length - 1];
+  if (player.frame > player.recStart && (!last || last.frame < player.frame)) {
+    state.events.push({ id: state.nextId++, frame: player.frame, buttons: player.recButtons });
+  }
+  player.keys = 0;
+  player.latch = 0;
+  render();
+  setStatus("Recorded frames " + player.recStart + " to " + player.frame + ".");
+}
+
+function stopPlayer(rewind) {
+  if (player.mode.startsWith("rec")) finishRecording();
+  setMode("stopped");
+  if (rewind) player.frame = 0;
+  showFrame();
+}
+
+$("play").addEventListener("click", () => {
+  if (player.mode === "playing" || player.mode === "recording") return;
+  if (player.mode === "recpaused") { run("recording"); return; }
+  if (player.frame >= endFrame()) player.frame = 0;
+  player.carry = 0;
+  run("playing");
+});
+$("pause").addEventListener("click", () => {
+  if (player.mode === "playing") setMode("paused");
+  else if (player.mode === "recording") setMode("recpaused");
+  showFrame();
+});
+$("rec").addEventListener("click", () => {
+  if (player.mode === "recording") { setMode("recpaused"); showFrame(); return; }
+  if (player.mode !== "recpaused") startRecording();
+  run("recording");
+});
+$("stop").addEventListener("click", () => stopPlayer(true));
+$("rate").addEventListener("change", showFrame);
+
+// Keyboard: the keys play the controller's buttons. Keys typed into a field are left alone.
+const typing = (t) => t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA");
+window.addEventListener("keydown", (ev) => {
+  if (typing(ev.target) || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  if (ev.code === "Space") {
+    ev.preventDefault();
+    if (ev.repeat) return;
+    if (player.mode === "playing" || player.mode === "recording") $("pause").click(); else $("play").click();
+    return;
+  }
+  const b = BUTTONS.find((x) => x.code === ev.code);
+  if (!b) return;
+  ev.preventDefault();
+  if (!(player.keys & b.bit)) { player.keys |= b.bit; player.latch |= b.bit; }
+  if (player.mode !== "playing" && player.mode !== "recording") showFrame();
+});
+window.addEventListener("keyup", (ev) => {
+  const b = BUTTONS.find((x) => x.code === ev.code);
+  if (!b) return;
+  player.keys &= ~b.bit;
+  if (player.mode !== "recording") player.latch &= ~b.bit;
+  if (player.mode !== "playing" && player.mode !== "recording") showFrame();
+});
+window.addEventListener("blur", () => { player.keys = 0; player.latch = 0; showFrame(); });
+
+$("keys").replaceChildren(...BUTTONS.map((b) => {
+  const cell = document.createElement("span");
+  const k = document.createElement("kbd");
+  k.textContent = b.key;
+  cell.append(k, " " + b.name);
+  return cell;
+}), (() => {
+  const cell = document.createElement("span");
+  const k = document.createElement("kbd");
+  k.textContent = "Space";
+  cell.append(k, " play, pause");
+  return cell;
+})());
+
+// The controller picture from the game's demos replaces the drawing when mooedit-pad.png loads
+// from this page's folder (or the page embeds it).
+(() => {
+  const href = document.querySelector("#pad-img image").getAttribute("href");
+  const probe = new Image();
+  probe.onload = () => { $("pad-img").removeAttribute("hidden"); $("pad-draw").setAttribute("hidden", ""); };
+  probe.src = href;
+})();
+
+$("lanes").replaceChildren(...BUTTONS.map((b) => { const s = document.createElement("span"); s.textContent = b.name; return s; }));
+load(state.name, hexToBytes(EXAMPLE));
+showFrame();
+setStatus("Showing an example recording from Atlantis 1. Open a .moo file or a ROM to edit your own.");
+</script>
+</body>
+</html>

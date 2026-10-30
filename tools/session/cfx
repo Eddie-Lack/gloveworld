@@ -1,0 +1,4 @@
+#!/bin/bash
+# cfx FILE FUNC [CTX]: aligned asm diff of FUNC against the ROM, with CTX context lines (default 4)
+. "$(dirname "$0")/env.sh"
+cd "$GW" && CTX=${3:-4} python3 "$(dirname "$0")/cmpctx.py" src/$1.c $2 --diff

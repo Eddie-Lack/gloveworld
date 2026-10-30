@@ -1,0 +1,8 @@
+#!/bin/bash
+# bld: build the full ROM and verify the checksum; exit 1 unless it matches
+. "$(dirname "$0")/env.sh"
+cd "$GW"
+make -j"$JOBS" BASEROM="$B" > "$S/build.log" 2>&1
+if grep -q "build/NGVE.z64: OK" "$S/build.log"; then echo "ROM OK"; exit 0; fi
+grep -i "error" "$S/build.log" | head -5
+echo "ROM MISMATCH"; exit 1

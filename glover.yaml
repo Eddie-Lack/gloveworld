@@ -1,0 +1,198 @@
+name: Glover (North America)
+sha1: 270be17b3c8da9b88a7b99c2a545b0bce16837f4
+options:
+  basename: NGVE
+  target_path: baserom.us.z64
+  elf_path: build/NGVE.elf
+  base_path: .
+  platform: n64
+  compiler: GCC
+
+  asm_path: asm
+  src_path: src
+  build_path: build
+  asset_path: bin
+  ld_script_path: NGVE.ld
+  ld_dependencies: False
+  subalign: null
+  o_as_suffix: True
+
+  symbol_addrs_path:
+    - symbol_addrs.txt
+  undefined_funcs_auto_path: undefined_funcs_auto.txt
+  undefined_syms_auto_path: undefined_syms_auto.txt
+
+  find_file_boundaries: False
+  section_order: [.rodata, .text, .data, .bss]
+  migrate_rodata_to_functions: True
+
+  generate_asm_macros_files: False
+  asm_function_macro: glabel
+  asm_data_macro: dlabel
+  asm_jtbl_label_macro: jlabel
+  asm_inc_header: |
+    .include "macro.inc"
+    .set noat
+    .set noreorder
+  generated_s_preamble: |
+    .set gp=64
+  header_encoding: ASCII
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  use_legacy_include_asm: False
+
+segments:
+  - name: header
+    type: header
+    start: 0x0
+
+  - name: boot
+    type: bin
+    start: 0x40
+
+  - name: entry
+    type: code
+    start: 0x1000
+    vram: 0x80100000
+    subsegments:
+      - [0x1000, hasm]
+
+  - name: main
+    type: code
+    start: 0x1040
+    vram: 0x80100040
+    bss_size: 0xBB690
+    subsegments:
+      - [0x1040, rodata]
+      - [0x10A0, .rodata, frontend]
+      - [0x1400, .rodata, title]
+      - [0x1600, .rodata, credits]
+      - [0x1840, .rodata, options]
+      - [0x1A70, .rodata, frontend2]
+      - [0x1C30, .rodata, bonus]
+      - [0x1DC0, .rodata, game]
+      - [0x2890, .rodata, cameo]
+      - [0x2938, .rodata, present]
+      - [0x29A0, .rodata, decompress]
+      - [0x29D0, .rodata, boss]
+      - [0x2F60, rodata]
+      - [0x2F70, .rodata, dma]
+      - [0x2FA0, .rodata, eeprom]
+      - [0x2FD0, rodata]
+      - [0x6910, .rodata, anim]
+      - [0x6940, .rodata, controller]
+      - [0x6BA0, .rodata, main]
+      - [0x6D60, .rodata, jalloc]
+      - [0x6F50, .rodata, object]
+      - [0x70F0, .rodata, text]
+      - [0x713C, .rodata, font]
+      - [0x7160, .rodata, maths]
+      - [0x7440, .rodata, overlay]
+      - [0x7600, .rodata, banks]
+      - [0x7EA0, .rodata, collision]
+      - [0x81C0, .rodata, actor]
+      - [0x84A0, .rodata, camera]
+      - [0x8710, .rodata, hand]
+      - [0x9570, .rodata, sound]
+      - [0x9780, .rodata, platform]
+      - [0x9960, .rodata, sched]
+      - [0x99A0, .rodata, timer]
+      - [0x99D0, .rodata, personal]
+      - [0x9BA0, .rodata, parse]
+      - [0xA4F0, .rodata, light]
+      - [0xA590, .rodata, wind]
+      - [0xA600, .rodata, collect]
+      - [0xA7D0, .rodata, spike]
+      - [0xA810, .rodata, puzzle]
+      - [0xAA50, .rodata, enemy]
+      - [0xB480, .rodata, nmeprocess]
+      - [0xB830, .rodata, nmeprocess2]
+      - [0xC0E0, .rodata, footprint]
+      - [0xC114, .rodata, shadow]
+      - [0xC200, .rodata, bullet]
+      - [0xC544, .rodata, spell]
+      - [0xC570, .rodata, ball]
+      - [0xCAC0, .rodata, water]
+      - [0xCCC0, .rodata, debris]
+      - [0xCDB0, .rodata, tip]
+      - [0xCE40, .rodata, buzzer]
+      - [0xCE80, .rodata, vent]
+      - [0xCE94, .rodata, quake]
+      - [0xCF28, .rodata, weather]
+      - [0xCF40, .rodata, cheat]
+      - [0xD064, rodata]
+      - [0xD920, asm]
+      - [0xF0D0, c, frontend]
+      - [0x13830, c, title]
+      - [0x15740, c, credits]
+      - [0x18020, c, options]
+      - [0x19B70, c, frontend2]
+      - [0x1BB30, c, bonus]
+      - [0x1D720, textbin, rspbootTextStart]
+      - [0x1D7F0, c, game]
+      - [0x2BCC0, c, cameo]
+      - [0x2CCA8, c, present]
+      - [0x2D2B0, c, decompress]
+      - [0x2D5E0, c, boss]
+      - [0x336F0, c, dma]
+      - [0x33940, c, eeprom]
+      - [0x348F8, c, anim]
+      - [0x34E60, c, controller]
+      - [0x3AC34, c, crc]
+      - [0x3AD70, c, main]
+      - [0x40BC0, c, jalloc]
+      - [0x435C8, c, object]
+      - [0x46680, c, text]
+      - [0x47380, c, font]
+      - [0x48000, c, maths]
+      - [0x4B460, c, overlay]
+      - [0x50400, c, banks]
+      - [0x56B90, c, collision]
+      - [0x5D350, c, actor]
+      - [0x63BE0, c, camera]
+      - [0x66338, c, hand]
+      - [0x789C0, c, sound]
+      - [0x7A810, c, platform]
+      - [0x80200, c, sched]
+      - [0x812D8, c, timer]
+      - [0x81A80, c, personal]
+      - [0x83090, c, parse]
+      - [0x89F90, c, light]
+      - [0x8B9D0, c, wind]
+      - [0x8C310, c, collect]
+      - [0x8F37C, c, spike]
+      - [0x8F660, c, puzzle]
+      - [0x92120, c, enemy]
+      - [0x98360, c, nmeprocess]
+      - [0x9B990, c, nmeprocess2]
+      - [0xA7820, c, footprint]
+      - [0xA8360, c, shadow]
+      - [0xA9E30, c, bullet]
+      - [0xAEDC4, c, spell]
+      - [0xAF510, c, ball]
+      - [0xB5010, c, water]
+      - [0xB7370, c, debris]
+      - [0xB8B40, c, tip]
+      - [0xB97C4, c, buzzer]
+      - [0xBA140, c, vent]
+      - [0xBA894, c, quake]
+      - [0xBB5BC, c, blur]
+      - [0xBC1DC, c, weather]
+      - [0xBC710, c, cheat]
+      - [0xBD710, textbin, gspF3DEX_fifoTextStart]
+      - [0xBEB40, textbin, gspSprite2DTextStart]
+      - [0xBF9E0, textbin, aspMainTextStart]
+      - [0xC0800, asm]
+      - [0xD51D0, data]
+      - [0xF3640, databin, gspF3DEX_fifoDataStart]
+      - [0xF3E40, databin, gspSprite2DDataStart]
+      - [0xF4E00, databin, aspMainDataStart]
+      - [0xF50C0, data]
+      - { start: 0xF6680, type: bss, vram: 0x801F5680 }
+
+  - name: assets
+    type: bin
+    start: 0xF6680
+  - [0x800000]

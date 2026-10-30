@@ -1,0 +1,6 @@
+#!/bin/bash
+# cf FILE FUNC...: score functions with cmpfunc (64 for a matched function, see README; extra flags via CFOPT)
+. "$(dirname "$0")/env.sh"
+cd "$GW"
+f=$1; shift
+for fn in "$@"; do printf "%s: " $fn; python3 tools/cmpfunc.py src/$f.c $fn ${CFOPT:+"$CFOPT"} --score 2>&1 | tail -3; done
