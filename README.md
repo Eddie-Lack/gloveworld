@@ -1,12 +1,12 @@
 # gloveworld
 
-A decompilation of Glover for the Nintendo 64 (North America, NGVE)
+A still in progress decompilation of Glover for the Nintendo 64 (North America, NGVE)
 
-That means C code that compiles to the exact bytes of the game's ROM
+Technically 100% matching! The C code compiles to the exact bytes of the game's ROM. 
 
-Every build is checked against the original
+Very much a work in progress though :)
 
-You need your own copy of the ROM!! It isn't in this repository
+You need your own copy of the ROM!! It isn't in this repository!
 
 ![Code](https://img.shields.io/badge/Code-100.00%25-2fcc3b?style=flat) ![Functions](https://img.shields.io/badge/Functions-100.00%25-2fcc3b?style=flat)
 
@@ -78,7 +78,7 @@ How the build works is in _[docs/building.md](docs/building.md)_:
 
 ## Contributing
 
-Read _[CLAUDE.md](CLAUDE.md)_ first (it's the rules for people and agents, the everyday commands, and where to write down what you learn)
+Read _[CLAUDE.md](CLAUDE.md)_ first - it's the rules for people and for robots
 
 Then read _[docs/workflow.md](docs/workflow.md)_ to see how to change code without breaking the match
 
