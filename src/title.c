@@ -22,7 +22,7 @@
 #include "object.h"
 #include "present.h"
 
-extern s32 fgStill;
+extern s32 introAnimTime;
 extern s32 aimBallX;
 extern s32 aimBallY;
 extern f32 aimBallScale;
@@ -53,21 +53,21 @@ extern s32 cXLU;
 extern f32 Xos;
 extern f32 XosVel;
 extern s32 currentHiscoresLevel;
-extern s32 nextHiscoresLevel;
-extern f32 hiscoresBoxScale;
-extern f32 hiscoresBoxScaleAim;
+extern s32 nextLevel;
+extern f32 bgScale;
+extern f32 aimBgScale;
 extern f32 Xos1;
 extern Backdrop *pBackground;
-extern u32 nextLevel;
-extern s16 temptext;
+extern u32 licenceFrame;
+extern s16 D_801E64D8;
 extern s16 farPlaneDist;
 extern s32 osTvType;
 void LoadTextureBank(s32 num);
 void FindTexture(void *texPtr, u32 texID, s32 verbose);
 u32 UpdateCRC(char *ptr);
 extern Overlay fadeNiceOL[2];
-extern s32 areYouSure;
-extern s32 aimArRScale;
+extern s32 fadeAvailable;
+extern s32 fadeDir;
 
 void DestroyOverlay(Overlay *overlay);
 
@@ -77,8 +77,8 @@ extern s16 creditsTitle;
 extern f32 creditsPX;
 extern f32 creditsPY;
 extern u8 onlyDrawBackdrops;
-extern s32 creditsScroll;
-extern s32 creditsLineHeight;
+extern s32 credpos;
+extern s32 credSpace;
 extern Overlay ballPicOL;
 struct Screen;
 s32 DefWait(s32 *act, struct Screen *me);
@@ -90,19 +90,19 @@ extern s32 cheatCount;
 void ActivateCheat(s32 num, s32 show);
 extern s32 controllerActive;
 extern s32 fadeOutVal;
-extern f32 bgScale;
+extern f32 fadeAdd;
 extern struct Actor *foregroundObjects[];
 extern s32 numForegroundObjects;
 extern s32 animWaitTime;
 extern s32 currentScreen;
 extern s32 nextScreen;
 extern s32 frameCount;
-extern s32 aimBgScale;
+extern s32 fadeDone;
 extern Overlay arrOL[2];
 extern Overlay A1OL;
 extern Overlay A2OL;
 extern u32 cAAlpha;
-extern u32 aimArLScale;
+extern u32 cAAlphaAim;
 extern s32 currentAnim;
 
 typedef struct ScreenSpot {
@@ -147,18 +147,15 @@ extern u8 currentName[3];
 extern u8 enteredName[3];
 extern s16 currentSaveSlot;
 extern s32 toStartGame;
-extern s32 sfxVolume;
-extern s32 musicVolume;
+extern s32 curSoundFXVol;
+extern s32 curSoundMUSVol;
 extern Overlay titleSlide1OL[16];
 extern Overlay titleSlide2OL[16];
 s32 MainOptionsWait(s32 *act, struct Screen *me);
 extern Overlay sfxOL;
 extern Overlay musxOL;
-extern s32 spacing;
-extern s32 credSpace;
-extern s32 credpos;
+extern s32 fgDirections[];
 extern f32 D_NUM;
-extern s32 credyscale;
 void AnimateActor(Actor *actor, s32 animNum, s32 loop, s32 queue, f32 speed);
 s32 WaitOKScr();
 
@@ -168,7 +165,7 @@ extern s32 doFades;
 extern s16 musVol;
 void MusSetMasterVolume(s32 flags, s32 volume);
 extern s32 activateOK;
-extern s32 slotSelActive;
+extern s32 inputOK;
 extern s32 cameFromTitle;
 
 extern f32 fgXss[];
@@ -179,19 +176,19 @@ extern s32 spinInFrame;
 extern s32 spinInCmpFrame[];
 extern f32 bncAmt[];
 extern f32 spinInCount[4];
-extern u8 cfb0[];
-extern u8 cfb1[];
+extern u8 cfb_16_a[];
+extern u8 cfb_16_b[];
 
 s32 MainTitleWait();
 
-extern s32 titleFgOffsetX;
-extern f32 fgSpinRot[];
+extern s32 allAdder;
+extern f32 jogAmt[];
 
 extern Overlay gloverOL[6];
 extern f32 aimScale[4];
 extern f32 actScale[4];
 extern s32 actTrans[4];
-extern s32 DiffDelay[4];
+extern s32 aimTrans[4];
 extern u8 tR;
 extern u8 tG;
 extern u8 tB;
@@ -208,23 +205,23 @@ void SetupTitleWait(void) {
         ballPicOL.frames = (SpriteFrames *)&spriteFrameList[GLOVE_ANIM];
         ballPicOL.behind = 0;
     }
-    slotSelActive = TRUE;
+    inputOK = TRUE;
     globalFontScale = 1.0f;
 }
 
 s32 InitTitleWait(s32 *act, Screen *me) {
     FadeScreenInN();
-    slotSelActive = TRUE;
+    inputOK = TRUE;
     me->currentSpot = 1;
     fgSpin.minSpot = 1;
-    credpos = 1;
-    spacing = 2;
-    credyscale = 0;
-    credSpace = 3;
-    fgSpinRot[1] = 0.0f;
-    fgSpinRot[2] = 0.0f;
-    fgSpinRot[3] = 0.0f;
-    fgSpinRot[4] = 0.0f;
+    fgDirections[0] = 1;
+    fgDirections[1] = 2;
+    fgDirections[2] = 0;
+    fgDirections[3] = 3;
+    jogAmt[0] = 0.0f;
+    jogAmt[1] = 0.0f;
+    jogAmt[2] = 0.0f;
+    jogAmt[3] = 0.0f;
 
     foregroundObjects[0] = JallocAlloc(sizeof(Actor), 1, "TitA1");
     InitActor(foregroundObjects[0], "newwave.ndo", -15.0f, -30.0f, 400.0f, 0);
@@ -271,10 +268,10 @@ s32 InitTitleWait(s32 *act, Screen *me) {
     AnimateActor(foregroundObjects[4], 0, 0, 0, 1.0f);
     AnimateActor(foregroundObjects[4], 3, 0, 1, 1.0f);
     AnimateActor(foregroundObjects[4], 2, 1, 1, 1.0f);
-    foregroundObjects[0]->pos.x += titleFgOffsetX;
-    foregroundObjects[1]->pos.x += titleFgOffsetX;
-    foregroundObjects[2]->pos.x += titleFgOffsetX;
-    foregroundObjects[3]->pos.x += titleFgOffsetX;
+    foregroundObjects[0]->pos.x += allAdder;
+    foregroundObjects[1]->pos.x += allAdder;
+    foregroundObjects[2]->pos.x += allAdder;
+    foregroundObjects[3]->pos.x += allAdder;
     initSpinFGObjects(4);
     ballXOffset = 0.0f;
     MainTitleWait(act, me);
@@ -284,7 +281,7 @@ s32 InitTitleWait(s32 *act, Screen *me) {
 }
 
 s32 DoneTitleWait(s32 act, Screen *me) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         spinOutFGObjects(4);
         if (nextScreen == 9 || nextScreen == 12) {
             doFades = TRUE;
@@ -297,13 +294,13 @@ s32 DoneTitleWait(s32 act, Screen *me) {
         if (nextScreen != 4) {
             if (nextScreen != 2) {
                 StopDrawing("donttitleweair");
-                memset(cfb0, 0, 0x25800);
-                memset(cfb1, 0, 0x25800);
+                memset(cfb_16_a, 0, 0x25800);
+                memset(cfb_16_b, 0, 0x25800);
             }
         }
     }
     FreeFGObjects();
-    slotSelActive = TRUE;
+    inputOK = TRUE;
     if (me->spots[me->currentSpot].func && activateOK) {
         me->spots[me->currentSpot].func();
         return FALSE;
@@ -313,7 +310,7 @@ s32 DoneTitleWait(s32 act, Screen *me) {
 
 s32 IntroTitleWait(void) {
     MainTitleWait();
-    fgStill = 0;
+    introAnimTime = 0;
     return TRUE;
 }
 
@@ -339,10 +336,10 @@ s32 MainTitleWait(s32 *act, Screen *me) {
     }
     for (i = 0; i < 4; i++) {
         if (me->currentSpot == i + 1) {
-            DiffDelay[i] = 255;
+            aimTrans[i] = 255;
             aimScale[i] = 0.25f;
         } else {
-            DiffDelay[i] = 180;
+            aimTrans[i] = 180;
             aimScale[i] = 0.1f;
         }
         if (aimScale[i] < actScale[i]) {
@@ -359,15 +356,15 @@ s32 MainTitleWait(s32 *act, Screen *me) {
                 actScale[i] = aimScale[i];
             }
         }
-        if (DiffDelay[i] < actTrans[i]) {
+        if (aimTrans[i] < actTrans[i]) {
             actTrans[i] -= 2;
         } else {
-            actTrans[i] = DiffDelay[i];
+            actTrans[i] = aimTrans[i];
         }
-        if (DiffDelay[i] > actTrans[i]) {
+        if (aimTrans[i] > actTrans[i]) {
             actTrans[i] += 2;
         } else {
-            actTrans[i] = DiffDelay[i];
+            actTrans[i] = aimTrans[i];
         }
         if (me->currentSpot != i + 1) {
             if (i == 0) {
@@ -408,17 +405,17 @@ s32 MainTitleWait(s32 *act, Screen *me) {
                          menuStrings[14][gameInfo.language], 1);
             }
         }
-        if (!fgStill) {
-            foregroundObjects[0]->rot.x = fgSpinRot[3];
+        if (!introAnimTime) {
+            foregroundObjects[0]->rot.x = jogAmt[2];
             foregroundObjects[0]->rot.y = sinf(animFloat * 0.2) * 0.1 + 3.14;
             foregroundObjects[0]->rot.z = sinf(animFloat * 0.15) * 0.1;
-            foregroundObjects[1]->rot.x = fgSpinRot[2];
+            foregroundObjects[1]->rot.x = jogAmt[1];
             foregroundObjects[1]->rot.y = sinf(animFloat * 0.3) * 0.1 + 3.14;
             foregroundObjects[1]->rot.z = sinf(animFloat * 0.15) * 0.1;
-            foregroundObjects[2]->rot.x = fgSpinRot[1];
+            foregroundObjects[2]->rot.x = jogAmt[0];
             foregroundObjects[2]->rot.y = sinf(animFloat * 0.1) * 0.1 + 3.14;
             foregroundObjects[2]->rot.z = sinf(animFloat * 0.15) * 0.1;
-            foregroundObjects[3]->rot.x = fgSpinRot[4];
+            foregroundObjects[3]->rot.x = jogAmt[3];
             foregroundObjects[3]->rot.y = sinf(animFloat * 0.18) * 0.1 + 3.14;
             foregroundObjects[3]->rot.z = sinf(animFloat * 0.15) * 0.1;
         }
@@ -437,7 +434,7 @@ s32 MainTitleWait(s32 *act, Screen *me) {
     }
     if (--demoTimer == 0) {
         nextScreen = 7;
-        fgStill = 31;
+        introAnimTime = 31;
         demoTimer = 600;
         currentSaveSlot = 6;
         activateOK = FALSE;
@@ -452,7 +449,7 @@ s32 MainTitleWait(s32 *act, Screen *me) {
         }
     }
     fgSpin.minSpot = 1;
-    if (aimBgScale) {
+    if (fadeDone) {
         DefWait(act, me);
     } else {
         aimBallX = me->spots[me->currentSpot].x + ballXOffset;
@@ -465,15 +462,15 @@ s32 MainTitleWait(s32 *act, Screen *me) {
     }
     if (*act == 0 || *act == 1) {
         if (me->currentSpot > 0) {
-            fgSpinRot[me->currentSpot] = 6.28f;
+            jogAmt[me->currentSpot - 1] = 6.28f;
         }
     }
-    fgSpinRot[1] *= 0.9;
-    fgSpinRot[2] *= 0.9;
-    fgSpinRot[3] *= 0.9;
-    fgSpinRot[4] *= 0.9;
+    jogAmt[0] *= 0.9;
+    jogAmt[1] *= 0.9;
+    jogAmt[2] *= 0.9;
+    jogAmt[3] *= 0.9;
     if (*act == 4 || *act == 5) {
-        if (aimArRScale == 1 && !aimBgScale) {
+        if (fadeDir == 1 && !fadeDone) {
             return FALSE;
         }
         if (nextScreen == 9 || nextScreen == 12) {
@@ -497,8 +494,8 @@ s32 MainTitleWait(s32 *act, Screen *me) {
 
 s32 DemoKeyRun(void) {
     StopDrawing("dkr");
-    memset(cfb0, 0, 0x25800);
-    memset(cfb1, 0, 0x25800);
+    memset(cfb_16_a, 0, 0x25800);
+    memset(cfb_16_b, 0, 0x25800);
     KillTitle();
     globalFontScale = 1.0f;
     StopDrawing("dkr");

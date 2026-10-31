@@ -51,21 +51,21 @@ extern s32 cXLU;
 extern f32 Xos;
 extern f32 XosVel;
 extern s32 currentHiscoresLevel;
-extern s32 nextHiscoresLevel;
-extern f32 hiscoresBoxScale;
-extern f32 hiscoresBoxScaleAim;
+extern s32 nextLevel;
+extern f32 bgScale;
+extern f32 aimBgScale;
 extern f32 Xos1;
 extern Backdrop *pBackground;
-extern u32 nextLevel;
-extern s16 temptext;
+extern u32 licenceFrame;
+extern s16 D_801E64D8;
 extern s16 farPlaneDist;
 extern s32 osTvType;
 void LoadTextureBank(s32 num);
 void FindTexture(void *texPtr, u32 texID, s32 verbose);
 u32 UpdateCRC(char *ptr);
 extern Overlay fadeNiceOL[2];
-extern s32 areYouSure;
-extern s32 aimArRScale;
+extern s32 fadeAvailable;
+extern s32 fadeDir;
 
 void DestroyOverlay(Overlay *overlay);
 
@@ -75,8 +75,8 @@ extern s16 creditsTitle;
 extern f32 creditsPX;
 extern f32 creditsPY;
 extern u8 onlyDrawBackdrops;
-extern s32 creditsScroll;
-extern s32 creditsLineHeight;
+extern s32 credpos;
+extern s32 credSpace;
 extern Overlay ballPicOL;
 struct Screen;
 s32 DefWait(s32 *act, struct Screen *me);
@@ -88,19 +88,19 @@ extern s32 cheatCount;
 void ActivateCheat(s32 num, s32 show);
 extern s32 controllerActive;
 extern s32 fadeOutVal;
-extern f32 bgScale;
+extern f32 fadeAdd;
 extern struct Actor *foregroundObjects[];
 extern s32 numForegroundObjects;
 extern s32 animWaitTime;
 extern s32 currentScreen;
 extern s32 nextScreen;
 extern s32 frameCount;
-extern s32 aimBgScale;
+extern s32 fadeDone;
 extern Overlay arrOL[2];
 extern Overlay A1OL;
 extern Overlay A2OL;
 extern u32 cAAlpha;
-extern u32 aimArLScale;
+extern u32 cAAlphaAim;
 extern s32 currentAnim;
 
 typedef struct ScreenSpot {
@@ -145,18 +145,14 @@ extern u8 currentName[3];
 extern u8 enteredName[3];
 extern s16 currentSaveSlot;
 extern s32 toStartGame;
-extern s32 sfxVolume;
-extern s32 musicVolume;
+extern s32 curSoundFXVol;
+extern s32 curSoundMUSVol;
 extern Overlay titleSlide1OL[16];
 extern Overlay titleSlide2OL[16];
 s32 MainOptionsWait(s32 *act, struct Screen *me);
 extern Overlay sfxOL;
 extern Overlay musxOL;
-extern s32 spacing;
-extern s32 credSpace;
-extern s32 credpos;
 extern f32 D_NUM;
-extern s32 credyscale;
 void AnimateActor(Actor *actor, s32 animNum, s32 loop, s32 queue, f32 speed);
 s32 WaitOKScr();
 
@@ -166,7 +162,7 @@ extern s32 doFades;
 extern s16 musVol;
 void MusSetMasterVolume(s32 flags, s32 volume);
 extern s32 activateOK;
-extern s32 slotSelActive;
+extern s32 inputOK;
 extern s32 cameFromTitle;
 
 extern f32 fgXss[];
@@ -177,8 +173,8 @@ extern s32 spinInFrame;
 extern s32 spinInCmpFrame[];
 extern f32 bncAmt[];
 extern f32 spinInCount[4];
-extern u8 cfb0[];
-extern u8 cfb1[];
+extern u8 cfb_16_a[];
+extern u8 cfb_16_b[];
 
 s32 MainTitleWait();
 
@@ -195,10 +191,10 @@ extern HiscoreEntry hiscoreTableCopy[6];
 extern BestTime bestTimesCopy[];
 extern char *startMenuStrings[][3];
 extern char *menuStrings[][3];
-extern s32 questionMode;
+extern s32 areYouSure;
 extern s32 debounceHiscorePadX;
-extern f32 hiscoresArrowRScaleAim;
-extern f32 hiscoresArrowLScaleAim;
+extern f32 aimArLScale;
+extern f32 aimArRScale;
 extern f32 aimEA;
 
 void CreditsInit(void) {
@@ -249,7 +245,7 @@ void CreditsRun(void) {
 }
 
 s32 CreditsInit2(void) {
-    creditsScroll = 0;
+    credpos = 0;
     newDesiredFrameRate = 3;
     globalFontScale = 1.0f;
     SetFont(1);
@@ -264,10 +260,10 @@ s32 CreditsRun2(s32 *act, Screen *me) {
     s32 yPos;
 
     ballPicOL.x -= (ballPicOL.x + 32.0f) / 4.0f;
-    creditsScroll++;
+    credpos++;
     for (i = 0; !(creditsText[i].name[0] == ' ' && creditsText[i].name[1] == ' ' && creditsText[i].name[2] == ' ');
          i++) {
-        yPos = i * creditsLineHeight - creditsScroll + 260;
+        yPos = i * credSpace - credpos + 260;
         if (yPos > -20 && yPos < 260) {
             NEW_TEXT(55, yPos, 255, 255, 255, fadeOutVal, 1.0f, 1.0f, 1, creditsText[i].title, 0);
             NEW_TEXT(36, yPos, 255, 155, 155, fadeOutVal, 1.0f, 1.0f, 1, creditsText[i].name, 0);
@@ -281,7 +277,7 @@ s32 CreditsRun2(s32 *act, Screen *me) {
     TitleScreenCameraSpin2();
     DefWait(act, me);
     if (*act == 4 || *act == 5) {
-        if (aimArRScale == 1 && !aimBgScale) {
+        if (fadeDir == 1 && !fadeDone) {
             return FALSE;
         }
         FadeScreenOutN();
@@ -295,12 +291,12 @@ s32 CreditsDone2(void) {
     s32 i;
     s32 yPos;
 
-    creditsScroll++;
-    if (!aimBgScale) {
+    credpos++;
+    if (!fadeDone) {
         MoveGloveOL();
         for (i = 0; !(creditsText[i].name[0] == ' ' && creditsText[i].name[1] == ' ' && creditsText[i].name[2] == ' ');
              i++) {
-            yPos = i * creditsLineHeight - creditsScroll + 260;
+            yPos = i * credSpace - credpos + 260;
             if (yPos > -20 && yPos < 260) {
                 NEW_TEXT(55, yPos, 255, 255, 255, fadeOutVal, 1.0f, 1.0f, 1, creditsText[i].title, 0);
                 NEW_TEXT(36, yPos, 255, 155, 155, fadeOutVal, 1.0f, 1.0f, 1, creditsText[i].name, 0);
@@ -314,7 +310,7 @@ s32 CreditsDone2(void) {
 }
 
 s32 HiscoresDone(s32 act, s32 me) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         spinOutFGObjects(2);
         HiscoresRun((s32 *)act, (struct Screen *)me);
         MoveGloveOL();
@@ -343,9 +339,9 @@ s32 HiscoresInit(s32 act, s32 me) {
     arrOL[1].alpha = 0;
     cXLU = 0;
     currentHiscoresLevel = -1;
-    nextHiscoresLevel = -1;
-    hiscoresBoxScale = 1.0f;
-    hiscoresBoxScaleAim = 1.0f;
+    nextLevel = -1;
+    bgScale = 1.0f;
+    aimBgScale = 1.0f;
     FadeScreenInN();
     initSpinFGObjects(2);
     exiting = 0;
@@ -417,14 +413,14 @@ s32 HiscoresRun(s32 *act, Screen *me) {
         aimRA = 255;
     }
     aimEA = (fgSpin.minSpot < 2) ? (((111.0f - spinInCount[0]) * 255.0f / 110.0f > 255.0f) ? 255.0f : ((110.0f - spinInCount[0]) * 255.0f / 110.0f < 0.0f) ? 0.0f : (110.0f - spinInCount[0]) * 255.0f / 110.0f) : 255.0f;
-    if (questionMode) {
+    if (areYouSure) {
         aimLA = 0;
         aimRA = 0;
         aimEA = 0.0f;
     }
     hTime++;
-    hiscoresArrowRScaleAim = 1024.0f;
-    hiscoresArrowLScaleAim = 1024.0f;
+    aimArLScale = 1024.0f;
+    aimArRScale = 1024.0f;
     arrOL[1].alpha -= (arrOL[1].alpha - aimLA) / 6;
     arrOL[0].alpha -= (arrOL[0].alpha - aimRA) / 6;
     spinInFGObjects(2);
@@ -445,20 +441,20 @@ s32 HiscoresRun(s32 *act, Screen *me) {
     for (j = 0; j < numForegroundObjects; j++) {
         GetQuaternionFromXYZRot(&foregroundObjects[j]->rotQuat, &foregroundObjects[j]->rot);
     }
-    hiscoresBoxScale += (hiscoresBoxScaleAim - hiscoresBoxScale) / 3.0f;
-    foregroundObjects[0]->scale.y = hiscoresBoxScale * 3.5;
-    foregroundObjects[0]->scale.x = hiscoresBoxScale * 1.6;
-    foregroundObjects[1]->scale.y = hiscoresBoxScale * 3.5;
-    foregroundObjects[1]->scale.x = hiscoresBoxScale * 1.6;
-    if (controllerActive && !questionMode) {
+    bgScale += (aimBgScale - bgScale) / 3.0f;
+    foregroundObjects[0]->scale.y = bgScale * 3.5;
+    foregroundObjects[0]->scale.x = bgScale * 1.6;
+    foregroundObjects[1]->scale.y = bgScale * 3.5;
+    foregroundObjects[1]->scale.x = bgScale * 1.6;
+    if (controllerActive && !areYouSure) {
         if (abs(pad[ActiveController].stickX) > 20) {
             if (pad[ActiveController].stickX > 0) {
                 if (currentHiscoresLevel < 5) {
                     ballPicOL.x = 210.0f;
-                    hiscoresArrowRScaleAim = 600.0f;
+                    aimArLScale = 600.0f;
                     if (!debounceHiscorePadX) {
-                        nextHiscoresLevel = currentHiscoresLevel + 1;
-                        hiscoresBoxScaleAim = 1.2f;
+                        nextLevel = currentHiscoresLevel + 1;
+                        aimBgScale = 1.2f;
                         PlaySampleNot3D(212, 100, 128, 128);
                         debounceHiscorePadX = 40;
                         Xos = 0.0f;
@@ -468,10 +464,10 @@ s32 HiscoresRun(s32 *act, Screen *me) {
                 }
             } else if (currentHiscoresLevel >= 0) {
                 ballPicOL.x = 110.0f;
-                hiscoresArrowLScaleAim = 600.0f;
+                aimArRScale = 600.0f;
                 if (!debounceHiscorePadX) {
-                    nextHiscoresLevel = currentHiscoresLevel - 1;
-                    hiscoresBoxScaleAim = 1.2f;
+                    nextLevel = currentHiscoresLevel - 1;
+                    aimBgScale = 1.2f;
                     PlaySampleNot3D(212, 100, 128, 128);
                     debounceHiscorePadX = 40;
                     Xos = 0.0f;
@@ -481,8 +477,8 @@ s32 HiscoresRun(s32 *act, Screen *me) {
             }
         }
     }
-    if (hiscoresBoxScale > 1.14) {
-        hiscoresBoxScaleAim = 1.0f;
+    if (bgScale > 1.14) {
+        aimBgScale = 1.0f;
     }
     Xos1 += XosVel;
     if (Xos1 < 0.0f) {
@@ -494,18 +490,18 @@ s32 HiscoresRun(s32 *act, Screen *me) {
         Xos1 = 0.0f;
     }
     if (!exiting && Xos1 > 250.0f) {
-        currentHiscoresLevel = nextHiscoresLevel;
+        currentHiscoresLevel = nextLevel;
         XosVel = -(XosVel * 0.4);
     }
     if (Xos1 < 0.0f) {
         Xos1 = 0.0f;
     }
     XosVel -= 1.0f;
-    temp = (arrOL[0].scaleY - hiscoresArrowRScaleAim) / 3.0f;
+    temp = (arrOL[0].scaleY - aimArLScale) / 3.0f;
     arrOL[0].x = spinInCount[0] + 205.0f;
     arrOL[1].x = 125.0f - spinInCount[0];
     arrOL[0].scaleX = arrOL[0].scaleY = arrOL[0].scaleY - temp;
-    arrOL[1].scaleX = arrOL[1].scaleY = arrOL[1].scaleY - (arrOL[1].scaleY - hiscoresArrowLScaleAim) / 3.0f;
+    arrOL[1].scaleX = arrOL[1].scaleY = arrOL[1].scaleY - (arrOL[1].scaleY - aimArRScale) / 3.0f;
     if (cXLU < 255) {
         cXLU += (255 - cXLU) / 3;
     }
@@ -560,7 +556,7 @@ s32 HiscoresRun(s32 *act, Screen *me) {
             break;
     }
     DefWait(act, me);
-    if (questionMode) {
+    if (areYouSure) {
         ballPicOL.x = 560.0f;
         if (*act == 4) {
             switch (currentHiscoresLevel) {
@@ -587,15 +583,15 @@ s32 HiscoresRun(s32 *act, Screen *me) {
                     break;
             }
             *act = 6;
-            questionMode = 0;
+            areYouSure = 0;
         }
         if (*act == 5) {
-            questionMode = 0;
+            areYouSure = 0;
             *act = 6;
         }
     }
     if (*act == 5) {
-        if (aimArRScale == 1 && !aimBgScale) {
+        if (fadeDir == 1 && !fadeDone) {
             return FALSE;
         }
         FadeScreenOutN();

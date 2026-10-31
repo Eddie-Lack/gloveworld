@@ -48,7 +48,7 @@ extern f32 ckbcamfrac;
 extern s32 reloadCounter;
 extern s32 cannonrand;
 extern f32 ckbmulfx;
-extern s32 cannonTurnSfx;
+extern s32 ckbfxnum;
 extern char *nmeObjectName[];
 extern Vec3 carnivalTempVect2;
 extern Vec3 carnivalCamOffVect;
@@ -141,7 +141,7 @@ void DoCarnivalBonus(void) {
     ang = MAX(ang, FindShortestAngle(plat->motion->oldRot.x, plat->motion->rot.x));
     if (ang != 0.0f) {
         if (handControl.samples[0].handle == 0) {
-            PlayContinuousSample(&handControl.samples[0], cannonTurnSfx, 0, &hand.pos, 128);
+            PlayContinuousSample(&handControl.samples[0], ckbfxnum, 0, &hand.pos, 128);
         }
         handControl.samples[0].volume = MIN(ang * ckbmulfx, 100.0f);
         handControl.samples[0].pitch = ang * 1000.0f + 128.0f;

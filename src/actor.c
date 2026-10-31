@@ -139,24 +139,24 @@ void InitActorList(void) {
     actorList.head.next = actorList.head.prev = &actorList.head;
     collisionList.count = 0;
     collisionList.head.collNext = collisionList.head.collPrev = &collisionList.head;
-    actorDistList.count = 0;
-    actorDistList.head.distNext = actorDistList.head.distPrev = &actorDistList.head;
-    actorDistList.head.distSq = 0.0f;
+    distList.count = 0;
+    distList.head.distNext = distList.head.distPrev = &distList.head;
+    distList.head.distSq = 0.0f;
 }
 
 void AddActorToDistList(Actor *actor) {
     Actor *ptr;
 
-    if (actorDistList.count != 0) {
-        for (ptr = &actorDistList.head; ptr != actorDistList.head.distPrev; ptr = ptr->distNext) {
+    if (distList.count != 0) {
+        for (ptr = &distList.head; ptr != distList.head.distPrev; ptr = ptr->distNext) {
             if (actor->distSq < ptr->distSq) {
                 break;
             }
         }
     } else {
-        ptr = &actorDistList.head;
+        ptr = &distList.head;
     }
-    actorDistList.count++;
+    distList.count++;
     actor->distNext = ptr;
     actor->distPrev = ptr->distPrev;
     ptr->distPrev->distNext = actor;

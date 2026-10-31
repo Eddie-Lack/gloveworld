@@ -425,7 +425,7 @@ already named, or nothing shows what they do).
 
 | Old | New | Confidence | Evidence |
 | --- | --- | --- | --- |
-| unk00 | ambient | medium | LightSet is BackgroundLighting: RotateLight callers pass &bgLighting.ambient, and the 8 bytes are the Ambient light before the LightList. |
+| unk00 | ambient | medium | LightSet is BackgroundLighting: RotateLight callers pass &backgroundLightList.ambient, and the 8 bytes are the Ambient light before the LightList. |
 
 ### Mesh
 
@@ -844,10 +844,10 @@ file-scope globals. A name used by statics of two functions gets a short prefix.
 | Old | New | Confidence | Evidence |
 | --- | --- | --- | --- |
 | D_801F0232 | footprintTexFmt | medium | DrawFootprint stores the footprint texture's format (`ptr->texture->fmt`) in it and nothing reads it. It was 3 at the title screen and in every frame of every demo recording. |
-| D_801E65A4 | slotConfirmMode | medium | SlotSelRun's confirm sub-menu: 1 when copying onto another slot (doCopyMode), 2 when starting a new game on a used slot, 3 once that is confirmed; while nonzero the yes/no rows and the red warning text are shown |
-| D_801E65A8 | choosingSlot | medium | set when a main menu row (load, new game, copy) is chosen. The cursor moves to the slot row; B clears it and restores the row |
-| D_801E65AC | slotSelCancelled | medium | set when the save-slot screen is left with Back; SlotSelDone then skips the selected spot's func |
-| D_801E65B0 | slotSelActive | medium | TRUE while the save-slot screen takes input (set by the title and name screens, cleared whenever SlotSelRun starts to leave); gates DefWait and the stick |
+| D_801E65A4 | questionMode | medium | map name at the -0x12A0 front-end alignment; SlotSelRun's confirm sub-menu: 1 when copying onto another slot (doCopyMode), 2 when starting a new game on a used slot, 3 once that is confirmed; while nonzero the yes/no rows and the red warning text are shown |
+| D_801E65A8 | selectingSlots | medium | map name at the -0x12A0 front-end alignment; set when a main menu row (load, new game, copy) is chosen. The cursor moves to the slot row; B clears it and restores the row |
+| D_801E65AC | aborting | medium | map name at the -0x12A0 front-end alignment; set when the save-slot screen is left with Back; SlotSelDone then skips the selected spot's func |
+| D_801E65B0 | inputOK | medium | map name at the -0x12A0 front-end alignment; TRUE while the save-slot screen takes input (set by the title and name screens, cleared whenever SlotSelRun starts to leave); gates DefWait and the stick |
 | D_801EC772 | nextKeyFrame | high | ReadControllerFromData: the frame number of the next recorded button change in demo playback, read from the record stream; -1 ends the demo |
 | D_801FA9E4 | playbackButtons | high | ReadControllerFromData: the button word read from the record stream and copied into controllerdata[].button each frame |
 | D_8029F110 | evilGloveLaugh | medium | static `laugh` of NMEProcessEvilGlove: set when sample 176 plays at the start of animation 6 (the one that ends in KillEnemy). It plays once |
@@ -856,9 +856,36 @@ file-scope globals. A name used by statics of two functions gets a short prefix.
 | D_8029F13C | evilGloveFootstepTimer | medium | static `footstepTimer` of NMEProcessEvilGlove: counts down from 78 in SPACEBOSS3's cameo while samples 148 and 149 (the hand's footstep sounds) alternate |
 | D_801F0208 | evilGloveFire | medium | static `fire` of NMEProcessEvilGlove (the last of its PC statics): toggles between 0 and 1 to pick the two evilGlovePos entries whose difference aims AddEvilGloveFire |
 | D_802B0D40 | staticMemory | medium | the 1 MB that ClearStaticMemory zeroes, starting 0x30 bytes after jallocHeapStart |
-| D_801E6750 | cannonTurnSfx | medium | sample 304, played by DoCarnivalBonus while the cannon turns (its volume uses ckbmulfx); the code passed its low half as `D_801E6752` |
-| D_801E6608 | fgStill | medium | nonzero stops the menus' idle wobble of the foreground objects (MainTitleWait, MainOptionsWait); the Intro screens clear it and leaving a menu sets it to 31. The emulator shows the title box rocking at 0 and frozen at 31 or 1 |
-| D_801E660C | titleFgOffsetX | medium | -40, added to the x of the title menu's first four foreground objects in InitTitleWait; the linker map's name for the address, `end`, clashes with the linker's own symbol |
+| D_801E6750 | ckbfxnum | medium | map name at the -0x12A0 front-end alignment; sample 304, played by DoCarnivalBonus while the cannon turns (its volume uses ckbmulfx); the code passed its low half as `D_801E6752` |
+| D_801E6608 | introAnimTime | medium | map name at the -0x12A0 front-end alignment; nonzero stops the menus' idle wobble of the foreground objects (MainTitleWait, MainOptionsWait); the Intro screens clear it and leaving a menu sets it to 31. The emulator shows the title box rocking at 0 and frozen at 31 or 1 |
+| D_801E660C | allAdder | medium | map name at the -0x12A0 front-end alignment; -40, added to the x of the title menu's first four foreground objects in InitTitleWait |
+| aimArLScale | cAAlphaAim | high | map name at the -0x12A0 front-end alignment; the target that cAAlpha steps toward, reset to Random(255) when reached (the old name came from the map at the wrong offset) |
+| aimArRScale | fadeDir | high | map name at the -0x12A0 front-end alignment; 1 or -1, multiplies the slide of the two fadeNiceOL halves |
+| bgScale | fadeAdd | high | map name at the -0x12A0 front-end alignment; 1.2 or 1.5, then multiplied by 1.16 each frame; the distance the fadeNiceOL halves move |
+| aimBgScale | fadeDone | high | map name at the -0x12A0 front-end alignment; set to 1 when the fadeNiceOL slide finishes; menus wait for it |
+| areYouSure | fadeAvailable | medium | map name at the -0x12A0 front-end alignment; 1 while the two fadeNiceOL overlays exist (set by InitFadeOverlayN, cleared by DoneFadeOverlayN) |
+| nextLevel | licenceFrame | high | map name at the -0x12A0 front-end alignment; frame counter of the licence screen (n64.bmp or licence.bmp); text changes at 125 and 250 |
+| temptext | D_801E64D8 | low | the map has no global here (a static in its build); the old name belongs to D_801E664C |
+| D_801E64D0 | zoomBodgeAmount | medium | map name at the -0x12A0 front-end alignment; unused in C |
+| fgSpinRot | jogAmt | medium | map name at the -0x12A0 front-end alignment; 4 floats at 0x801E6614; the code wrote fgSpinRot[1] to [4] from 0x801E6610. Set to 6.28 when a menu row is chosen, then decays by 0.9 per frame |
+| D_801E6610 | allVAddr | medium | map name at the -0x12A0 front-end alignment; unused in C |
+| credpos, spacing, credyscale, credSpace | fgDirections | high | map name at the -0x12A0 front-end alignment; s32 array at 0x801E650C; the spin-in switch reads fgDirections[i] (0 to 3: up, down, left, right). The four old scalar names belong to 0x801E6680 to 0x801E668C |
+| slotCopyMode | copyMode | medium | map name at the -0x12A0 front-end alignment; toggled by the copy row of the save-slot screen; while set, the next slot chosen is the copy target |
+| sfxVolume | curSoundFXVol | high | map name at the -0x12A0 front-end alignment; sound effect volume of the options screen |
+| musicVolume | curSoundMUSVol | high | map name at the -0x12A0 front-end alignment; music volume of the options screen |
+| DiffDelay | aimTrans | high | map name at the -0x12A0 front-end alignment; array of targets that actTrans[i] steps toward (pairs with actTrans, as aimScale with actScale). DiffDelay is the map name of 0x801E66B8 |
+| D_801E664C | temptext | medium | map name at the -0x12A0 front-end alignment; unused in C |
+| D_801E6684 | spacing | medium | map name at the -0x12A0 front-end alignment; unused in C |
+| D_801E6688 | credyscale | medium | map name at the -0x12A0 front-end alignment; unused in C |
+| D_801E66B0 | difficultySetting | medium | map name at the -0x12A0 front-end alignment; unused in C |
+| D_801E66B8 | DiffDelay | medium | map name at the -0x12A0 front-end alignment; unused in C |
+| D_801E6728 | sYaddr | medium | map name at the -0x12A0 front-end alignment; unused in C |
+| actorDistList | distList | high | map name at -0x13C0; AddActorToDistList adds to it |
+| handShinTextureData | handTextureData | high | map name at -0x13C0, next to handTextureList |
+| handShinTextures | handTextureList | high | map name at -0x13C0 |
+| handShinTexturePalette | handTexturePalette | high | map name 8 bytes before hand (-0x13C8). The old symbol_addrs entry handTexturePalette = 0x802902C8 was 8 bytes out and unused |
+| bgLighting | backgroundLightList | high | map name at -0x13D0, between lightningList and windList |
+| D_801F40C0 | jumptable | high | map name at -0x13B0, directly after aspMainDataEnd; 16 code addresses read by the music player at 0x801C15F0 |
 | D_801E7584 | gameInfo.exitFlags | high | gameInfo + 0x54; RunGame tests bit 0 before letting a button skip a cameo |
 | D_8028FAC8 | cameraInfo.focus | high | cameraInfo + 0x100; StartNewLevel and the title set it to &hand.pos and &zero, as other code does |
 | D_801FB108 | pad[4].pressed[BUTTON_Z] | high | pad + 0x678: Z on the fifth (debug) pad, which the N64 code never polls; MainTitleWait then cycles autoPlayback (0 off, 1 record, 2 play back). In the emulator, setting it advanced autoPlayback and stayed set |
@@ -869,9 +896,9 @@ file-scope globals. A name used by statics of two functions gets a short prefix.
 | D_801F7DCC | textItem | high | static of LevelSelectScreen: the text items of the menu |
 | D_80000430 | zbuffer | high | gDPSetDepthImage target in main.c; D_430 (its physical alias) is filled with 0xFFFCFFFC as the depth clear; 320x240x2 bytes end at 0x80025C30, just below D_80025C60 |
 | D_80025C60 | rdp_output | high | RDP output buffer: task output_buff, output_buff_size = &D_80025C60[rdp_output_size] (0x1000 u64); sits beside rdp_output_size/rdp_output_len |
-| D_8002DC90 | musicHeap | high | musicPlayer.heap with heap_length 0x493E0, which ends exactly at D_80077070 |
+| D_8002DC90 | audio_memory | high | linker map name (same fixed address in every build); musicPlayer.heap with heap_length 0x493E0, which ends exactly at D_80077070 |
 | D_80077070 | pbankBuffer | medium | audioCtrl.base: pbank1 is DMAed here and pbank2 follows it (audioCtrl.ptr = base + pbank1 size) |
-| D_800DD030 | fontTexBankBuffer | high | fixed RAM buffer LoadTextureBank(10) DMAs FONT_TEX_BANK into instead of JallocAlloc; follows the second framebuffer (D_800B7830+0x25800) |
+| D_800DD030 | sysfont | high | linker map name (same fixed address in every build); fixed RAM buffer LoadTextureBank(10) DMAs FONT_TEX_BANK into instead of JallocAlloc; follows the second framebuffer (D_800B7830+0x25800) |
 | D_8011C720 | rspbootTextStart | high | ucode_boot of the gfx task; the splat textbin segment of that name at ROM 0x1D720 (libultra ucode.h name) |
 | D_801BC710 | gspF3DEX_fifoTextStart | high | ucode text of UseUCode 4, paired with gspF3DEX_fifoDataStart; splat textbin segment of that name at ROM 0xBD710 |
 | D_801BDB40 | gspSprite2DTextStart | high | ucode text swapped in when flag is set, paired with D_801F2E40; splat textbin segment at ROM 0xBEB40 |
@@ -1147,22 +1174,22 @@ Other `D_` symbols were members of named objects and are now written that way: `
 `defaultBehaviour[ROBOT]`, `defaultBehaviour[NME_FROG]` and `defaultBehaviour[BUTTERFLY].accel`/`.moveSpeed`.
 `enemyStats` is an array of `EnemyStat` (flags, scale, score) indexed by actor type, and `stats` (the
 HUD counters, `Stat` in overlay.h) is indexed by the PC port's `GARIB_STATS` to `LIVES_STATS`. Not changed:
-ScreenFadedIn reads `gameInfo.fade` and `fade2` as one 32-bit word. It keeps `D_801E753C`. Where the code read only the low half of an `s32` (`D_801E6716`, `D_801EEBF2`, `D_801F19B6`, `D_801E6752`), it now passes the variable itself (`centerDX`, `crawlfx`, `spellDuration`, `cannonTurnSfx`) to a 16-bit parameter, and GCC loads only the low half. object.c keeps
+ScreenFadedIn reads `gameInfo.fade` and `fade2` as one 32-bit word. It keeps `D_801E753C`. Where the code read only the low half of an `s32` (`D_801E6716`, `D_801EEBF2`, `D_801F19B6`, `D_801E6752`), it now passes the variable itself (`centerDX`, `crawlfx`, `spellDuration`, `ckbfxnum`) to a 16-bit parameter, and GCC loads only the low half. object.c keeps
 `D_80284D74` (`matrixStack.result`). Its matrix prototypes use `f32[4][4]`, not maths.h's `Matrix`.
 | Old | New | Confidence | Evidence |
 | --- | --- | --- | --- |
-| D_80092030 | cfb0 | high | assigned to cfb_ptrs[0] in main.c and cleared with memset 0x25800, one 320x240 16 bit buffer |
-| D_800B7830 | cfb1 | high | assigned to cfb_ptrs[1] in main.c, directly after cfb0 |
-| D_801E6630 | hiscoresArrowRScaleAim | medium | target scale of arrOL[0] (right arrow) in HiscoresRun, 1024 or 600 when pressed |
-| D_801E6634 | hiscoresArrowLScaleAim | medium | target scale of arrOL[1] (left arrow) in HiscoresRun |
-| D_801E6638 | hiscoresBoxScale | medium | current scale of the two title box foreground objects in HiscoresRun, eases toward the aim |
-| D_801E663C | hiscoresBoxScaleAim | medium | target of hiscoresBoxScale, 1.2 on a page change then back to 1.0 |
-| D_801E6640 | questionMode | medium | original global questionMode; hides the arrows and makes A restore the default table and B cancel in HiscoresRun |
+| D_80092030 | cfb_16_a | high | linker map name (same fixed address in every build); assigned to cfb_ptrs[0] in main.c and cleared with memset 0x25800, one 320x240 16 bit buffer |
+| D_800B7830 | cfb_16_b | high | linker map name (same fixed address in every build); assigned to cfb_ptrs[1] in main.c, directly after cfb_16_a |
+| D_801E6630 | aimArLScale | medium | map name at the -0x12A0 front-end alignment; target scale of arrOL[0] (right arrow) in HiscoresRun, 1024 or 600 when pressed |
+| D_801E6634 | aimArRScale | medium | map name at the -0x12A0 front-end alignment; target scale of arrOL[1] (left arrow) in HiscoresRun |
+| D_801E6638 | bgScale | medium | map name at the -0x12A0 front-end alignment; current scale of the two title box foreground objects in HiscoresRun, eases toward the aim |
+| D_801E663C | aimBgScale | medium | map name at the -0x12A0 front-end alignment; target of bgScale, 1.2 on a page change then back to 1.0 |
+| D_801E6640 | areYouSure | medium | map name at the -0x12A0 front-end alignment; hides the arrows and makes A restore the default table and B cancel in HiscoresRun |
 | D_801E6644 | currentHiscoresLevel | high | original global currentHiscoresLevel; page index in HiscoresRun, -1 is the score table and 0 to 5 the worlds |
-| D_801E6648 | nextHiscoresLevel | medium | page chosen by the stick, copied to currentHiscoresLevel when the slide reaches the edge |
-| D_801E668C | creditsLineHeight | medium | 20 pixel line spacing used as i * D_801E668C in CreditsRun2 and CreditsDone2 |
+| D_801E6648 | nextLevel | medium | map name at the -0x12A0 front-end alignment; page chosen by the stick, copied to currentHiscoresLevel when the slide reaches the edge |
+| D_801E668C | credSpace | medium | map name at the -0x12A0 front-end alignment; 20 pixel line spacing used as i * credSpace in CreditsRun2 and CreditsDone2 |
 | D_801E6720 | toStartGame | medium | original global toStartGame; gates ActStartGame and the fade in DoneOKScr, never set in C |
-| D_801E6724 | nameFinished | medium | set when the end key is chosen. A is ignored afterwards in WaitNameScr |
+| D_801E6724 | nameWait | medium | map name at the -0x12A0 front-end alignment; set when the end key is chosen. A is ignored afterwards in WaitNameScr |
 | D_801E672C | bonusClosedAlpha | medium | alpha of the BONUS LEVELS CLOSED text, ramped by 30 while Normal is selected in WaitOKScr |
 | D_801EB538 | tipTextEnglish | high | original global tipTextEnglish; tipText for language 0 in InitTipList |
 | D_801EBB30 | tipTextFrench | high | original global tipTextFrench; tipText for language 1 |
@@ -1182,7 +1209,7 @@ ScreenFadedIn reads `gameInfo.fade` and `fade2` as one 32-bit word. It keeps `D_
 | D_80298928 | lightningVect | high | original global lightningVect; Vec3 array of the lightning points in DrawLightning |
 | D_8029FA70 | cameraWaterFrame | high | iobj static frame of CheckCameraForWater; set to -frameCount when entering water |
 | D_802AA700 | lastTipTag | medium | tag of the tip just read in UpdateTips, written and never read |
-| D_801E6680 | creditsScroll | medium | frame counter in CreditsInit2 that scrolls the credits text up |
+| D_801E6680 | credpos | medium | map name at the -0x12A0 front-end alignment; frame counter in CreditsInit2 that scrolls the credits text up |
 | D_801E6690 | cXLU | medium | PC global cXLU: the alpha ramp to 255 restarted on each hiscores page change |
 | D_801E6694 | Xos | medium | PC global Xos: bounces of the hiscores text slide, which stops after 2 |
 | D_801E6698 | Xos1 | medium | PC global Xos1: x offset of the hiscores text sliding in from 250 |

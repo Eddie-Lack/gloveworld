@@ -467,7 +467,7 @@ void CheckCameraForWater(void) {
             cameraWaterFrame = -frameCount;
         }
         RotateVector2DXYZ(&cameraUpVect, &cameraUpVectAim, SineWave(20.0f, frameCount, cameraWaterFrame) / 10.0f, 2);
-        for (light = bgLighting.lights.head.next; light != &bgLighting.lights.head; light = light->next) {
+        for (light = backgroundLightList.lights.head.next; light != &backgroundLightList.lights.head; light = light->next) {
             light->target[0] = Aabs(light->target[1] + 0.05);
             light->target[1] = Aabs(light->target[1] + 0.1);
         }
@@ -486,28 +486,28 @@ void CheckCameraForWater(void) {
         bAim = originalAmbientLight[2];
         AddScaledVector(&cameraUpVect, &cameraUpVect, 0.49f, &cameraUpVectAim, 0.51f);
         MakeUnit(&cameraUpVect);
-        for (light = bgLighting.lights.head.next; light != &bgLighting.lights.head; light = light->next) {
+        for (light = backgroundLightList.lights.head.next; light != &backgroundLightList.lights.head; light = light->next) {
             light->target[0] = light->origX;
             light->target[1] = light->origY;
         }
     }
-    dist = bgLighting.ambient.l.col[0] - rAim;
+    dist = backgroundLightList.ambient.l.col[0] - rAim;
     if (ABS(dist) > 1.0f) {
         dist /= 4.0f;
-        bgLighting.ambient.l.col[0] -= dist;
-        bgLighting.ambient.l.colc[0] -= dist;
+        backgroundLightList.ambient.l.col[0] -= dist;
+        backgroundLightList.ambient.l.colc[0] -= dist;
     }
-    dist = bgLighting.ambient.l.col[1] - gAim;
+    dist = backgroundLightList.ambient.l.col[1] - gAim;
     if (ABS(dist) > 1.0f) {
         dist /= 4.0f;
-        bgLighting.ambient.l.col[1] -= dist;
-        bgLighting.ambient.l.colc[1] -= dist;
+        backgroundLightList.ambient.l.col[1] -= dist;
+        backgroundLightList.ambient.l.colc[1] -= dist;
     }
-    dist = bgLighting.ambient.l.col[2] - bAim;
+    dist = backgroundLightList.ambient.l.col[2] - bAim;
     if (ABS(dist) > 1.0f) {
         dist /= 4.0f;
-        bgLighting.ambient.l.col[2] -= dist;
-        bgLighting.ambient.l.colc[2] -= dist;
+        backgroundLightList.ambient.l.col[2] -= dist;
+        backgroundLightList.ambient.l.colc[2] -= dist;
     }
     camera.state->waterState = cameraInWater;
 }

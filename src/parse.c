@@ -559,7 +559,7 @@ s32 ParseTokenGeneric(s16 token, u8 **data) {
     }
     if (token == TOKEN_AMBIENT_LIGHT) {
         CopyFromData(sval, data, 6);
-        SetupAmbientLight(&bgLighting.ambient, sval[0], sval[1], sval[2]);
+        SetupAmbientLight(&backgroundLightList.ambient, sval[0], sval[1], sval[2]);
         return TRUE;
     }
     if (token == TOKEN_HAND_START) {

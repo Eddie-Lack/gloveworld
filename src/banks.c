@@ -16,8 +16,8 @@ extern u32 *ballTexturePalette;
 extern u32 *ballTexturePalette2;
 extern u32 *ballBitTextureData;
 extern u32 *ballBitTexturePalette;
-extern u32 *handShinTextureData[2];
-extern u32 *handShinTexturePalette[2];
+extern u32 *handTextureData[2];
+extern u32 *handTexturePalette[2];
 extern Texture *cyclingTextures[20];
 extern u8 codeDrawingRequest;
 extern u8 gfxIsDrawing;
@@ -53,7 +53,7 @@ extern u8 ckCheat2TexBankRomStart[];
 extern u8 ckCheat2TexBankRomEnd[];
 extern u8 rcDemoTexBankRomStart[];
 extern u8 genericObjBankRomStart[];
-extern u32 fontTexBankBuffer[];
+extern u32 sysfont[];
 extern char outputMessageBuffer[];
 extern char message[];
 extern u8 atlantisSharedObjBankRomStart[];
@@ -245,7 +245,7 @@ void LoadTextureBank(u32 num) {
     if (num != FONT_TEX_BANK) {
         ptr = JallocAlloc(DMAGetSize(start, end), 0, "TexBank");
     } else {
-        ptr = fontTexBankBuffer;
+        ptr = sysfont;
     }
     DMAMemory(ptr, start, end);
     if (ptr != NULL) {
@@ -374,9 +374,9 @@ void RestoreDrawList(u8 *list, s32 base, Object *obj) {
                 } else if (obj->name[0] == 'c' && obj->name[1] == 'b' && obj->name[2] == 'a' && obj->name[3] == 'l' && obj->name[4] == 'l' && obj->name[5] == 0) {
                     ballTextureData2 = w;
                 } else if (obj->name[0] == 'G' && obj->name[1] == 'S' && obj->name[2] == 'h' && obj->name[3] == 'i' && obj->name[4] == 'n' && obj->name[5] == 'L' && obj->name[6] == 0) {
-                    handShinTextureData[0] = w;
+                    handTextureData[0] = w;
                 } else if (obj->name[0] == 'G' && obj->name[1] == 'S' && obj->name[2] == 'h' && obj->name[3] == 'i' && obj->name[4] == 'n' && obj->name[5] == 'R' && obj->name[6] == 0) {
-                    handShinTextureData[1] = w;
+                    handTextureData[1] = w;
                 } else if (ballBitTextureData == NULL && obj->name[0] == 'g' && obj->name[1] == 'b' && obj->name[2] == 'l' && obj->name[3] == '_' && obj->name[4] == 'b' && obj->name[5] == 't' && obj->name[6] == 0) {
                     ballBitTextureData = w;
                 }
@@ -393,9 +393,9 @@ void RestoreDrawList(u8 *list, s32 base, Object *obj) {
                 } else if (obj->name[0] == 'c' && obj->name[1] == 'b' && obj->name[2] == 'a' && obj->name[3] == 'l' && obj->name[4] == 'l' && obj->name[5] == 0) {
                     ballTexturePalette2 = w;
                 } else if (obj->name[0] == 'G' && obj->name[1] == 'S' && obj->name[2] == 'h' && obj->name[3] == 'i' && obj->name[4] == 'n' && obj->name[5] == 'L' && obj->name[6] == 0) {
-                    handShinTexturePalette[0] = w;
+                    handTexturePalette[0] = w;
                 } else if (obj->name[0] == 'G' && obj->name[1] == 'S' && obj->name[2] == 'h' && obj->name[3] == 'i' && obj->name[4] == 'n' && obj->name[5] == 'R' && obj->name[6] == 0) {
-                    handShinTexturePalette[1] = w;
+                    handTexturePalette[1] = w;
                 } else if (ballBitTexturePalette == NULL && obj->name[0] == 'g' && obj->name[1] == 'b' && obj->name[2] == 'l' && obj->name[3] == '_' && obj->name[4] == 'b' && obj->name[5] == 't' && obj->name[6] == 0) {
                     ballBitTexturePalette = w;
                 }

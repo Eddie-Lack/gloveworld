@@ -26,7 +26,7 @@ extern s32 cheatActivated;
 extern u8 gamePaused;
 extern s32 incval;
 extern u8 dontClearScreen;
-extern u16 cfb0[];
+extern u16 cfb_16_a[];
 extern s32 screenshotCount;
 s32 PCcreat(char *name, s32 mode);
 s32 PCwrite(s32 fd, void *buf, s32 size);
@@ -190,8 +190,8 @@ void ProcessInputPersonal(void) {
         PrepareSong((audioCtrl.current - 1) % 61);
     }
     if (pad[4].button[BUTTON_DPAD_RIGHT]) {
-        RotateLight(&bgLighting.ambient, 0, 0.0f, 0.2f);
-        RotateLight(&bgLighting.ambient, 1, 0.0f, 0.2f);
+        RotateLight(&backgroundLightList.ambient, 0, 0.0f, 0.2f);
+        RotateLight(&backgroundLightList.ambient, 1, 0.0f, 0.2f);
     }
     if (pad[4].pressed[BUTTON_DPAD_RIGHT]) {
         PrepareSong((audioCtrl.current + 1) % 61);
@@ -200,8 +200,8 @@ void ProcessInputPersonal(void) {
         CreatePuffCircle(&hand.pos);
     }
     if (pad[4].button[BUTTON_DPAD_DOWN]) {
-        RotateLight(&bgLighting.ambient, 0, -0.2f, 0.0f);
-        RotateLight(&bgLighting.ambient, 1, -0.2f, 0.0f);
+        RotateLight(&backgroundLightList.ambient, 0, -0.2f, 0.0f);
+        RotateLight(&backgroundLightList.ambient, 1, -0.2f, 0.0f);
     }
     if ((cheatActivated & 2) && pad[ActiveController].pressed[BUTTON_SHOULDER_LEFT] && !IsHandHoldingBall() && ball.link != &hand) {
         EnemyDropBall();
@@ -282,7 +282,7 @@ void updateLava(u8 *buf, u32 width, u32 height) {
 }
 
 void ScreenShot(void) {
-    u16 *fb = cfb0;
+    u16 *fb = cfb_16_a;
     char name[16];
     u8 line[0x500];
     u8 header[0x36] = {

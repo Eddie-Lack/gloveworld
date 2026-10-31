@@ -26,8 +26,8 @@ extern Vec3 lightningVect[];
 extern Vtx *vtxPtr;
 
 void InitBackgroundLightList(void) {
-    bgLighting.lights.head.next = bgLighting.lights.head.prev = &bgLighting.lights.head;
-    bgLighting.lights.count = 0;
+    backgroundLightList.lights.head.next = backgroundLightList.lights.head.prev = &backgroundLightList.lights.head;
+    backgroundLightList.lights.count = 0;
 }
 
 void InitHandLightList(void) {
@@ -36,15 +36,15 @@ void InitHandLightList(void) {
 }
 
 void AddBackgroundLight(GameLight *light) {
-    GameLight *ptr = bgLighting.lights.head.next;
+    GameLight *ptr = backgroundLightList.lights.head.next;
 
-    if (bgLighting.lights.count < 7 && light->next == NULL) {
+    if (backgroundLightList.lights.count < 7 && light->next == NULL) {
         light->next = ptr;
         light->prev = ptr->prev;
         ptr->prev->next = light;
         ptr->prev = light;
-        light->index = bgLighting.lights.count;
-        bgLighting.lights.count++;
+        light->index = backgroundLightList.lights.count;
+        backgroundLightList.lights.count++;
     }
 }
 
@@ -52,7 +52,7 @@ inline void RemoveLight(GameLight *ptr) {
     if (ptr->next != NULL) {
         ptr->prev->next = ptr->next;
         ptr->next->prev = ptr->prev;
-        bgLighting.lights.count--;
+        backgroundLightList.lights.count--;
         ptr->next = NULL;
     }
     JallocFree(&ptr);
@@ -124,8 +124,8 @@ void ProcessBackgroundLights(Actor *actor) {
         return;
     }
     if (actor->flags & 0x10000) {
-        gSPNumLights(glistp++, bgLighting.lights.count - bgLighting.lights.numSkipped);
-        for (ptr = bgLighting.lights.head.next; ptr != &bgLighting.lights.head; ptr = ptr->next) {
+        gSPNumLights(glistp++, backgroundLightList.lights.count - backgroundLightList.lights.numSkipped);
+        for (ptr = backgroundLightList.lights.head.next; ptr != &backgroundLightList.lights.head; ptr = ptr->next) {
             if (ptr->type != 2) {
                 SetupLightNew(&lightArray[lightOffset][draw_buffer], ptr->col[0], ptr->col[1], ptr->col[2], ptr->dir.x,
                               ptr->dir.y, ptr->dir.z);
@@ -136,8 +136,8 @@ void ProcessBackgroundLights(Actor *actor) {
             }
         }
     } else {
-        gSPNumLights(glistp++, bgLighting.lights.count);
-        for (ptr = bgLighting.lights.head.next; ptr != &bgLighting.lights.head; ptr = ptr->next) {
+        gSPNumLights(glistp++, backgroundLightList.lights.count);
+        for (ptr = backgroundLightList.lights.head.next; ptr != &backgroundLightList.lights.head; ptr = ptr->next) {
             SetupLightNew(&lightArray[lightOffset][draw_buffer], ptr->col[0], ptr->col[1], ptr->col[2], ptr->dir.x,
                           ptr->dir.y, ptr->dir.z);
             gSPLight(glistp++, &lightArray[lightOffset][draw_buffer], lights++);
@@ -146,7 +146,7 @@ void ProcessBackgroundLights(Actor *actor) {
             }
         }
     }
-    gSPLight(glistp++, &bgLighting.ambient, lights);
+    gSPLight(glistp++, &backgroundLightList.ambient, lights);
     lastLitActorFlags = actor->flags;
 }
 
@@ -154,8 +154,8 @@ void UpdateLights(void) {
     GameLight *ptr;
     GameLight *ptr2;
 
-    bgLighting.lights.numSkipped = 0;
-    for (ptr = bgLighting.lights.head.next; ptr != &bgLighting.lights.head; ptr = ptr2) {
+    backgroundLightList.lights.numSkipped = 0;
+    for (ptr = backgroundLightList.lights.head.next; ptr != &backgroundLightList.lights.head; ptr = ptr2) {
         ptr2 = ptr->next;
         if (ptr->timer > 0) {
             if (--ptr->timer == 0) {
@@ -167,7 +167,7 @@ void UpdateLights(void) {
             continue;
         }
         if (ptr->type == 2) {
-            bgLighting.lights.numSkipped++;
+            backgroundLightList.lights.numSkipped++;
         }
         UpdateLightDirections(ptr);
         UpdateLightColours(ptr);

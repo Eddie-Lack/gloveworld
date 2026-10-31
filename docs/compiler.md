@@ -152,7 +152,7 @@ ROM loads a global by absolute address (`lui` plus offset) or through a base reg
 
 - **The ROM reloads a global after a store, but ours keeps it.** The global was probably an array element or a
   struct member in the original, not a scalar. GCC treats aggregate memory as possibly aliased and does not move
-  loads across the stores. Examples: `fgSpin` (ActivateCollectable, DrawScreen), `bgLighting`
+  loads across the stores. Examples: `fgSpin` (ActivateCollectable, DrawScreen), `backgroundLightList`
   (DoIntroEffects), `D_801F90D0[6].delay` (EndOfLevelScreen), `stats[2].scale` (NMEProcessHubChicken).
 - **The ROM addresses neighbours absolutely, but ours uses one base register.** The neighbours were probably
   separate globals, not fields of one struct. Examples: the four `u8` menu globals in UpdatePause, the two stun

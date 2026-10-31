@@ -21,7 +21,7 @@
 #include "object.h"
 #include "present.h"
 
-extern s32 fgStill;
+extern s32 introAnimTime;
 extern s32 aimBallX;
 extern s32 aimBallY;
 extern f32 aimBallScale;
@@ -51,13 +51,13 @@ extern s32 cXLU;
 extern f32 Xos;
 extern f32 XosVel;
 extern s32 currentHiscoresLevel;
-extern s32 nextHiscoresLevel;
-extern f32 hiscoresBoxScale;
-extern f32 hiscoresBoxScaleAim;
+extern s32 nextLevel;
+extern f32 bgScale;
+extern f32 aimBgScale;
 extern f32 Xos1;
 extern Backdrop *pBackground;
-extern u32 nextLevel;
-extern s16 temptext;
+extern u32 licenceFrame;
+extern s16 D_801E64D8;
 extern s16 farPlaneDist;
 extern s32 osTvType;
 void LoadTextureBank(s32 num);
@@ -65,8 +65,8 @@ void FindTexture(void *texPtr, u32 texID, s32 verbose);
 u32 UpdateCRC(char *ptr);
 extern Overlay fadeNiceOL[2];
 extern Overlay D_801F64B4;
-extern s32 areYouSure;
-extern s32 aimArRScale;
+extern s32 fadeAvailable;
+extern s32 fadeDir;
 
 void DestroyOverlay(Overlay *overlay);
 
@@ -76,8 +76,8 @@ extern s16 creditsTitle;
 extern f32 creditsPX;
 extern f32 creditsPY;
 extern u8 onlyDrawBackdrops;
-extern s32 creditsScroll;
-extern s32 creditsLineHeight;
+extern s32 credpos;
+extern s32 credSpace;
 extern Overlay ballPicOL;
 struct Screen;
 s32 DefWait(s32 *act, struct Screen *me);
@@ -89,19 +89,19 @@ extern s32 cheatCount;
 void ActivateCheat(s32 num, s32 show);
 extern s32 controllerActive;
 extern s32 fadeOutVal;
-extern f32 bgScale;
+extern f32 fadeAdd;
 extern struct Actor *foregroundObjects[];
 extern s32 numForegroundObjects;
 extern s32 animWaitTime;
 extern s32 currentScreen;
 extern s32 nextScreen;
 extern s32 frameCount;
-extern s32 aimBgScale;
+extern s32 fadeDone;
 extern Overlay arrOL[2];
 extern Overlay A1OL;
 extern Overlay A2OL;
 extern u32 cAAlpha;
-extern u32 aimArLScale;
+extern u32 cAAlphaAim;
 extern s32 currentAnim;
 
 typedef struct ScreenSpot {
@@ -146,18 +146,15 @@ extern u8 currentName[3];
 extern u8 enteredName[3];
 extern s16 currentSaveSlot;
 extern s32 toStartGame;
-extern s32 sfxVolume;
-extern s32 musicVolume;
+extern s32 curSoundFXVol;
+extern s32 curSoundMUSVol;
 extern Overlay titleSlide1OL[16];
 extern Overlay titleSlide2OL[16];
 s32 MainOptionsWait(s32 *act, struct Screen *me);
 extern Overlay sfxOL;
 extern Overlay musxOL;
-extern s32 spacing;
-extern s32 credSpace;
-extern s32 credpos[];
+extern s32 fgDirections[];
 extern f32 D_NUM;
-extern s32 credyscale;
 void AnimateActor(Actor *actor, s32 animNum, s32 loop, s32 queue, f32 speed);
 s32 WaitOKScr();
 
@@ -167,7 +164,7 @@ extern s32 doFades;
 extern s16 musVol;
 void MusSetMasterVolume(s32 flags, s32 volume);
 extern s32 activateOK;
-extern s32 slotSelActive;
+extern s32 inputOK;
 extern s32 cameFromTitle;
 
 extern f32 fgXss[];
@@ -178,43 +175,43 @@ extern s32 spinInFrame;
 extern s32 spinInCmpFrame[];
 extern f32 bncAmt[];
 extern f32 spinInCount[4];
-extern u8 cfb0[];
-extern u8 cfb1[];
+extern u8 cfb_16_a[];
+extern u8 cfb_16_b[];
 
 s32 MainTitleWait();
 
-extern s32 slotCopyMode;
+extern s32 copyMode;
 extern s16 copyFromSlot;
-extern s32 slotConfirmMode;
-extern s32 slotSelCancelled;
+extern s32 questionMode;
+extern s32 aborting;
 extern s32 yPsn;
 extern Overlay slotsOL[6];
-extern s32 choosingSlot;
+extern s32 selectingSlots;
 extern s32 selectedSlot;
 extern s32 debounceSlotPadX;
 extern char *startMenuStrings[][3];
 extern char *menuStrings[][3];
-extern f32 fgSpinRot[];
+extern f32 jogAmt[];
 
 void NoAction(void) {
 }
 
 s32 TimeTrialScr(s32 *act, Screen *me) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         MoveGloveOL();
         return FALSE;
     }
     SetFadeColour(0, 0, 0);
     gameInfo.fade2 = gameInfo.fade = 300;
     UpdateFade();
-    memset(cfb0, 0, 0x25800);
-    memset(cfb1, 0, 0x25800);
+    memset(cfb_16_a, 0, 0x25800);
+    memset(cfb_16_b, 0, 0x25800);
     CheatStartGame(15);
     return TRUE;
 }
 
 s32 PracticeScr(void) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         MoveGloveOL();
         return FALSE;
     }
@@ -223,8 +220,8 @@ s32 PracticeScr(void) {
     gameInfo.fade2 = gameInfo.fade = 300;
     UpdateFade();
     StopDrawing("practice");
-    memset(cfb0, 0, 0x25800);
-    memset(cfb1, 0, 0x25800);
+    memset(cfb_16_a, 0, 0x25800);
+    memset(cfb_16_b, 0, 0x25800);
     KillTitle();
     currentSaveSlot = 6;
     memclear(&saveSlot[6], sizeof(SaveSlot));
@@ -235,14 +232,14 @@ s32 PracticeScr(void) {
     currentScreen = 1;
     currentAnim = 0;
     levelSelectCount = 0;
-    fgStill = 31;
+    introAnimTime = 31;
     return TRUE;
 }
 
 void DoneFadeOverlayN(void) {
     DestroyOverlay(&fadeNiceOL[0]);
     DestroyOverlay(&fadeNiceOL[1]);
-    areYouSure = 0;
+    fadeAvailable = 0;
 }
 
 inline void InitFadeOverlayN(void) {
@@ -251,47 +248,47 @@ inline void InitFadeOverlayN(void) {
     fadeNiceOL[0].scaleY = fadeNiceOL[1].scaleY = 0x2454;
     fadeNiceOL[0].scaleX = fadeNiceOL[1].scaleX = 0x32C8;
     fadeNiceOL[0].r = fadeNiceOL[0].g = fadeNiceOL[0].b = fadeNiceOL[1].r = fadeNiceOL[1].g = fadeNiceOL[1].b = 0;
-    aimArRScale = fadeNiceOL[1].behind = fadeNiceOL[0].behind = 0;
-    areYouSure = 1;
+    fadeDir = fadeNiceOL[1].behind = fadeNiceOL[0].behind = 0;
+    fadeAvailable = 1;
     fadeNiceOL[0].x = -250.0f;
     fadeNiceOL[1].x = 550.0f;
 }
 
 void FadeScreenOutN(void) {
-    if (!areYouSure) {
+    if (!fadeAvailable) {
         InitFadeOverlayN();
     }
-    aimArRScale = 1;
+    fadeDir = 1;
     fadeOutVal = 255;
     fadeNiceOL[0].x = -220.0f;
     fadeNiceOL[1].x = 520.0f;
-    bgScale = 1.2f;
+    fadeAdd = 1.2f;
 }
 
 void MoveGloveOL(void) {
 }
 
 void FadeScreenInN(void) {
-    if (!areYouSure) {
+    if (!fadeAvailable) {
         InitFadeOverlayN();
     }
-    aimArRScale = -1;
+    fadeDir = -1;
     fadeNiceOL[0].x = 178.0f;
     fadeNiceOL[1].x = 122.0f;
-    bgScale = 1.5f;
+    fadeAdd = 1.5f;
 }
 
 void RunFadeN(void) {
-    if (areYouSure) {
+    if (fadeAvailable) {
         if (!doFades) {
             fadeNiceOL[1].y = fadeNiceOL[0].y = 520.0f;
         } else {
             fadeNiceOL[1].y = fadeNiceOL[0].y = 120.0f;
         }
-        aimBgScale = 1;
-        if (aimArRScale == -1) {
+        fadeDone = 1;
+        if (fadeDir == -1) {
             if (fadeNiceOL[0].x > -250.0f) {
-                aimBgScale = 0;
+                fadeDone = 0;
             }
         } else {
             if (doFades) {
@@ -310,13 +307,13 @@ void RunFadeN(void) {
                 if (fadeOutVal < 0) {
                     fadeOutVal = 0;
                 }
-                aimBgScale = 0;
+                fadeDone = 0;
             }
         }
-        if (!aimBgScale) {
-            fadeNiceOL[0].x += bgScale * aimArRScale;
-            fadeNiceOL[1].x -= bgScale * aimArRScale;
-            bgScale *= 1.16;
+        if (!fadeDone) {
+            fadeNiceOL[0].x += fadeAdd * fadeDir;
+            fadeNiceOL[1].x -= fadeAdd * fadeDir;
+            fadeAdd *= 1.16;
         }
     }
 }
@@ -324,11 +321,11 @@ void RunFadeN(void) {
 s32 ATeamInit(void) {
     s32 i;
 
-    if (nextLevel == 0) {
+    if (licenceFrame == 0) {
         LoadTextureBank(TITLE_TEX_BANK);
         farPlaneDist = 30000;
     }
-    if (nextLevel == 1) {
+    if (licenceFrame == 1) {
         pBackground = JallocAlloc(sizeof(Backdrop), 1, "Backdrop");
         pBackground->r = pBackground->g = pBackground->b = 255;
         pBackground->alpha = 0;
@@ -341,25 +338,25 @@ s32 ATeamInit(void) {
         fog.g = 0;
         fog.b = 0;
     }
-    if (nextLevel >= 2) { // a separate test keeps GCC from folding the range check
-        if (nextLevel < 70 && pBackground->alpha < 255) {
+    if (licenceFrame >= 2) { // a separate test keeps GCC from folding the range check
+        if (licenceFrame < 70 && pBackground->alpha < 255) {
             pBackground->alpha = (pBackground->alpha + 10 > 255) ? 255 : pBackground->alpha + 10;
         }
     }
-    nextLevel++;
-    if (nextLevel == 125 || nextLevel == 250) {
+    licenceFrame++;
+    if (licenceFrame == 125 || licenceFrame == 250) {
         FadeScreenOut();
     }
-    if (nextLevel > 125 && ScreenFadedOut() && temptext == 0) {
+    if (licenceFrame > 125 && ScreenFadedOut() && D_801E64D8 == 0) {
         if (osTvType == 0) {
-            temptext = 1;
+            D_801E64D8 = 1;
             FindTexture(&pBackground->tex, UpdateCRC("licence.bmp"), 1);
             FadeScreenIn();
         } else {
             goto done;
         }
     }
-    if (nextLevel > 250 && ScreenFadedOut() && temptext == 1) {
+    if (licenceFrame > 250 && ScreenFadedOut() && D_801E64D8 == 1) {
     done:
         for (i = 0; i < 5; i++) {
             JallocFree(&textureBanks[i].data);
@@ -379,14 +376,14 @@ s32 ATeamRun(void) {
     A2OL.b = 230;
     A2OL.alpha = ~cAAlpha;
     A1OL.alpha = cAAlpha;
-    if (aimArLScale < cAAlpha) {
+    if (cAAlphaAim < cAAlpha) {
         cAAlpha -= 6;
     }
-    if (cAAlpha < aimArLScale) {
+    if (cAAlpha < cAAlphaAim) {
         cAAlpha += 5;
     }
-    if (abs(cAAlpha - aimArLScale) < 6) {
-        aimArLScale = Random(255);
+    if (abs(cAAlpha - cAAlphaAim) < 6) {
+        cAAlphaAim = Random(255);
     }
     return 0;
 }
@@ -405,7 +402,7 @@ void KillTitle(void) {
     ClearText();
     DestroyOverlay(&fadeNiceOL[0]);
     DestroyOverlay(&D_801F64B4); // fadeNiceOL[1]: the ROM loads this address again instead of adding 0x74
-    areYouSure = 0;
+    fadeAvailable = 0;
     DestroyOverlay(&ballPicOL);
     JallocFree(&pBackground);
     SetFadeColour(0, 0, 0);
@@ -418,7 +415,7 @@ void KillTitle(void) {
     nextScreen = 1;
     currentAnim = 7;
     levelSelectCount = 0;
-    fgStill = 31;
+    introAnimTime = 31;
     cameraInfo.overrideTimer = 0;
     frameCount = 0;
     ShowJalloc();
@@ -528,7 +525,7 @@ void spinOutFGObjects(s32 numFgObjects) {
             alpha = 255;
         }
         obj->alpha = alpha;
-        switch (credpos[i]) {
+        switch (fgDirections[i]) {
             case 0:
                 foregroundObjects[i]->pos.y = fgYss[i] + spinInCount[i];
                 foregroundObjects[i]->rot.x = fgRt[i] + spinInCount[i] / D_NUM;
@@ -584,7 +581,7 @@ void spinInFGObjects(s32 numFgObjects) {
             alpha = 255;
         }
         obj->alpha = alpha;
-        switch (credpos[i]) {
+        switch (fgDirections[i]) {
             case 0:
                 foregroundObjects[i]->pos.y = fgYss[i] + spinInCount[i];
                 foregroundObjects[i]->rot.x = fgRt[i] + spinInCount[i] / D_NUM;
@@ -671,7 +668,7 @@ void CheatStartGame(s8 mode) {
     nextScreen = 13;
     currentAnim = 0;
     levelSelectCount = 0;
-    fgStill = 31;
+    introAnimTime = 31;
 }
 
 s32 addAnim(s32 *anim) {
@@ -706,13 +703,13 @@ void DoMenu(void) {
         fog.r = 0;
         fog.g = 0;
         fog.b = 0;
-        memset(cfb0, 0, 0x25800);
-        memset(cfb1, 0, 0x25800);
+        memset(cfb_16_a, 0, 0x25800);
+        memset(cfb_16_b, 0, 0x25800);
         FadeScreenIn();
         SetupLight(&light, 255, 200, 255, 255, 200, 255, 4.0f, 1.0f, 0.0f);
         light.next = NULL;
         AddBackgroundLight(&light);
-        SetupAmbientLight(&bgLighting.ambient, 100, 80, 80);
+        SetupAmbientLight(&backgroundLightList.ambient, 100, 80, 80);
         SetFadeColour(0, 0, 0);
         gameInfo.fade = 255;
         gameInfo.fade2 = 300;
@@ -846,7 +843,7 @@ s32 DefWait(s32 *act, Screen *me) {
         case 4:
             if (me->spots[me->currentSpot].next != 13) {
                 nextScreen = me->spots[me->currentSpot].next;
-                fgStill = 31;
+                introAnimTime = 31;
             }
             PlaySampleNot3D(216, 100, 128, 128);
             ballPicOL.scaleX = 700;
@@ -866,12 +863,12 @@ s32 DefWait(s32 *act, Screen *me) {
 INCLUDE_ASM("asm/nonmatchings/frontend", pad_80110518);
 
 inline void doCopyMode(void) {
-    if (!slotCopyMode) {
+    if (!copyMode) {
         copyFromSlot = currentSaveSlot;
     } else if (currentSaveSlot != copyFromSlot) {
-        slotConfirmMode = 1;
+        questionMode = 1;
     }
-    slotCopyMode = !slotCopyMode;
+    copyMode = !copyMode;
     currentAnim--;
 }
 
@@ -906,7 +903,7 @@ s32 SlotSelRun(s32 *act, Screen *me) {
     pcCDone = 0;
     fgSpin.minSpot = 1;
     foregroundObjects[2]->scale.z = 1.0f;
-    if (choosingSlot) {
+    if (selectingSlots) {
         for (world = 0; world < 6; world++) {
             if ((saveSlot[currentSaveSlot].levels >> (world * 5)) & 1) {
                 pcCDone += 2;
@@ -937,7 +934,7 @@ s32 SlotSelRun(s32 *act, Screen *me) {
         NEW_TEXT(160, 90, 255, 255, 0, 255, 0.8f, 0.8f, 1, temp, 1);
         SetFont(0);
     }
-    if (slotConfirmMode) {
+    if (questionMode) {
         foregroundObjects[0]->scale.x = 0.9f;
         foregroundObjects[1]->scale.x = 0.9f;
         foregroundObjects[2]->scale.x = 0.0f;
@@ -947,14 +944,14 @@ s32 SlotSelRun(s32 *act, Screen *me) {
         foregroundObjects[2]->scale.z = 0.0f;
     }
     for (i = 0; i < 6; i++) {
-        if (i == currentSaveSlot && (choosingSlot || slotCopyMode)) {
+        if (i == currentSaveSlot && (selectingSlots || copyMode)) {
             slotsOL[i].r = 255;
             slotsOL[i].g = 255;
             slotsOL[i].b = 255;
             slotsOL[i].alpha = !me->currentSpot ? sinf(animFloat * 0.65) * 90.0f + 128.0f + 38.0f : 255;
             slotsOL[i].scaleX = 1500;
             slotsOL[i].scaleY = 1500;
-        } else if (slotCopyMode && i == copyFromSlot) {
+        } else if (copyMode && i == copyFromSlot) {
             slotsOL[i].r = 255;
             slotsOL[i].g = 100;
             slotsOL[i].b = 100;
@@ -970,8 +967,8 @@ s32 SlotSelRun(s32 *act, Screen *me) {
             slotsOL[i].scaleY = 1024;
         }
     }
-    if (!me->currentSpot || slotCopyMode) {
-        if (slotSelActive && !slotConfirmMode && aimBgScale
+    if (!me->currentSpot || copyMode) {
+        if (inputOK && !questionMode && fadeDone
             && abs(pad[ActiveController].stickX) > 20 && !debounceSlotPadX) {
             if (pad[ActiveController].stickX > 0) {
                 if (currentSaveSlot < 5) {
@@ -1024,59 +1021,59 @@ s32 SlotSelRun(s32 *act, Screen *me) {
     SetFont(0);
     TitleScreenCameraSpin2();
     pulse = sinf(animFloat * 0.65) * 90.0f + 128.0f + 38.0f;
-    foregroundObjects[0]->rot.x = fgSpinRot[3];
+    foregroundObjects[0]->rot.x = jogAmt[2];
     foregroundObjects[0]->rot.y = sinf(animFloat * 0.2) * 0.1 + 3.14;
     foregroundObjects[0]->rot.z = sinf(animFloat * 0.15) * 0.1;
-    foregroundObjects[1]->rot.x = fgSpinRot[2];
+    foregroundObjects[1]->rot.x = jogAmt[1];
     foregroundObjects[1]->rot.y = sinf(animFloat * 0.3) * 0.1 + 3.14;
     foregroundObjects[1]->rot.z = sinf(animFloat * 0.15) * 0.1;
-    foregroundObjects[2]->rot.x = fgSpinRot[1];
+    foregroundObjects[2]->rot.x = jogAmt[0];
     foregroundObjects[2]->rot.y = sinf(animFloat * 0.1) * 0.1 + 3.14;
     foregroundObjects[2]->rot.z = sinf(animFloat * 0.15) * 0.1;
     for (k = 0; k < numForegroundObjects; k++) {
         GetQuaternionFromXYZRot(&foregroundObjects[k]->rotQuat, &foregroundObjects[k]->rot);
     }
-    if (!slotCopyMode) {
+    if (!copyMode) {
         if (!me->currentSpot) {
             me->spots[0].x = currentSaveSlot * 50 + 35;
         }
-        if (slotSelActive) {
+        if (inputOK) {
             DefWait(act, me);
         }
         // SlotSelRun compares currentSpot as signed; the field is a u32 for DefWait's unsigned tests
-        if ((s32)me->currentSpot <= 0 && !choosingSlot) {
+        if ((s32)me->currentSpot <= 0 && !selectingSlots) {
             me->currentSpot = 1;
         }
-        if ((s32)me->currentSpot > 0 && choosingSlot) {
+        if ((s32)me->currentSpot > 0 && selectingSlots) {
             me->currentSpot = 0;
         }
     } else {
         ballPicOL.x -= (ballPicOL.x - (currentSaveSlot * 50 + 35)) / 3.0f;
         ballPicOL.y -= (ballPicOL.y - 60.0f) / 3.0f;
     }
-    if (!slotConfirmMode) {
+    if (!questionMode) {
         for (j = 0; j < numForegroundObjects; j++) {
             foregroundObjects[j]->alpha = 255;
         }
         oldCurspot = me->currentSpot;
-        if (choosingSlot) {
+        if (selectingSlots) {
             me->currentSpot = selectedSlot;
         }
-        NEW_TEXT(spinInCount[0] + 160.0f, yPsn + 95, 255, 255, 255, (me->currentSpot == 1 ? (slotCopyMode ? pulse / 2.0f : pulse) : (slotCopyMode ? 128 : 255)), me->currentSpot == 1 ? 1.0f : 0.8f, me->currentSpot == 1 ? 1.0f : 0.8f, 1,
+        NEW_TEXT(spinInCount[0] + 160.0f, yPsn + 95, 255, 255, 255, (me->currentSpot == 1 ? (copyMode ? pulse / 2.0f : pulse) : (copyMode ? 128 : 255)), me->currentSpot == 1 ? 1.0f : 0.8f, me->currentSpot == 1 ? 1.0f : 0.8f, 1,
                  startMenuStrings[0][gameInfo.language], 1);
-        NEW_TEXT(160.0f - spinInCount[1], yPsn + 126, 255, 255, 255, (me->currentSpot == 2 ? (slotCopyMode ? pulse / 2.0f : pulse) : (slotCopyMode ? 128 : 255)), me->currentSpot == 2 ? 1.0f : 0.8f, me->currentSpot == 2 ? 1.0f : 0.8f, 1,
+        NEW_TEXT(160.0f - spinInCount[1], yPsn + 126, 255, 255, 255, (me->currentSpot == 2 ? (copyMode ? pulse / 2.0f : pulse) : (copyMode ? 128 : 255)), me->currentSpot == 2 ? 1.0f : 0.8f, me->currentSpot == 2 ? 1.0f : 0.8f, 1,
                  startMenuStrings[1][gameInfo.language], 1);
         NEW_TEXT(spinInCount[2] + 160.0f, yPsn + 159, 255, 255, 255, me->currentSpot == 3 ? pulse : 255, me->currentSpot == 3 ? 1.0f : 0.8f,
                  me->currentSpot == 3 ? 1.0f : 0.8f, 1,
-                 startMenuStrings[slotCopyMode + 2 + (slotCopyMode ? currentSaveSlot == copyFromSlot : 0)][gameInfo.language],
+                 startMenuStrings[copyMode + 2 + (copyMode ? currentSaveSlot == copyFromSlot : 0)][gameInfo.language],
                  1);
         me->currentSpot = oldCurspot;
     } else {
         foregroundObjects[2]->alpha = 0;
         foregroundObjects[2]->alpha = 0;
-        NEW_TEXT(spinInCount[0] + 160.0f, yPsn + 124, 255, 255, 255, (me->currentSpot == 2 ? (slotCopyMode ? pulse / 2.0f : pulse) : (slotCopyMode ? 128 : 255)), me->currentSpot == 2 ? 1.0f : 0.8f, me->currentSpot == 2 ? 1.0f : 0.8f, 1,
+        NEW_TEXT(spinInCount[0] + 160.0f, yPsn + 124, 255, 255, 255, (me->currentSpot == 2 ? (copyMode ? pulse / 2.0f : pulse) : (copyMode ? 128 : 255)), me->currentSpot == 2 ? 1.0f : 0.8f, me->currentSpot == 2 ? 1.0f : 0.8f, 1,
                  startMenuStrings[5][gameInfo.language], 1);
-        NEW_TEXT(160.0f - spinInCount[0], yPsn + 159, 255, 255, 255, (me->currentSpot == 3 ? (slotCopyMode ? pulse / 2.0f : pulse) : (slotCopyMode ? 128 : 255)), me->currentSpot == 3 ? 1.0f : 0.8f, me->currentSpot == 3 ? 1.0f : 0.8f, 1,
+        NEW_TEXT(160.0f - spinInCount[0], yPsn + 159, 255, 255, 255, (me->currentSpot == 3 ? (copyMode ? pulse / 2.0f : pulse) : (copyMode ? 128 : 255)), me->currentSpot == 3 ? 1.0f : 0.8f, me->currentSpot == 3 ? 1.0f : 0.8f, 1,
                  startMenuStrings[6][gameInfo.language], 1);
         SetFont(1);
         NEW_TEXT(spinInCount[0] + 160.0f, yPsn + 78, 255, 50, 50, 255, 1.0f, 1.0f, 1,
@@ -1098,67 +1095,67 @@ s32 SlotSelRun(s32 *act, Screen *me) {
         if (*act == 4) {
             *act = 6;
             if (me->currentSpot == 2) {
-                if (slotConfirmMode == 2) {
+                if (questionMode == 2) {
                     *act = 4;
-                    slotSelActive = FALSE;
+                    inputOK = FALSE;
                     me->currentSpot = 1;
-                    slotConfirmMode = 3;
+                    questionMode = 3;
                 } else {
                     saveSlot[currentSaveSlot] = saveSlot[copyFromSlot];
                     SaveSlots();
                     SaveCRC();
-                    slotConfirmMode = 0;
+                    questionMode = 0;
                     me->currentSpot = 3;
                 }
             } else {
-                if (slotConfirmMode == 2) {
-                    me->currentSpot = slotConfirmMode;
+                if (questionMode == 2) {
+                    me->currentSpot = questionMode;
                 }
-                slotConfirmMode = 0;
+                questionMode = 0;
             }
         }
     }
     if (pad[ActiveController].pressed[BUTTON_B]) {
-        if (slotCopyMode) {
+        if (copyMode) {
             currentSaveSlot = copyFromSlot;
-        } else if (choosingSlot) {
+        } else if (selectingSlots) {
             oldslot = selectedSlot;
             *act = 6;
-            choosingSlot = 0;
+            selectingSlots = 0;
             me->currentSpot = oldslot;
         }
     }
-    if (choosingSlot) {
+    if (selectingSlots) {
         fgSpin.maxSpot = 0;
     }
     if ((*act == 0 || *act == 1) && (s32)me->currentSpot > 0) {
-        fgSpinRot[me->currentSpot] = 6.28f;
+        jogAmt[me->currentSpot - 1] = 6.28f;
     }
-    fgSpinRot[1] *= 0.9;
-    fgSpinRot[2] *= 0.9;
-    fgSpinRot[3] *= 0.9;
+    jogAmt[0] *= 0.9;
+    jogAmt[1] *= 0.9;
+    jogAmt[2] *= 0.9;
     if (*act == 5) {
-        if (!slotConfirmMode) {
+        if (!questionMode) {
             nextScreen = 1;
-            choosingSlot = 0;
+            selectingSlots = 0;
             FadeScreenOutN();
-            slotCopyMode = 0;
-            slotConfirmMode = 0;
+            copyMode = 0;
+            questionMode = 0;
             initSpinOutFGObjects(3);
-            slotSelCancelled = 1;
-            slotSelActive = FALSE;
+            aborting = 1;
+            inputOK = FALSE;
             return TRUE;
         }
-        choosingSlot = 0;
-        slotConfirmMode = 0;
+        selectingSlots = 0;
+        questionMode = 0;
     }
-    if (slotConfirmMode) {
+    if (questionMode) {
         ballXOffset = 40.0f;
     } else {
         ballXOffset = 0.0f;
     }
     if (*act == 4) {
-        if (slotCopyMode) {
+        if (copyMode) {
             PlaySampleNot3D(216, 100, 128, 128);
         }
         switch (me->currentSpot) {
@@ -1168,44 +1165,44 @@ s32 SlotSelRun(s32 *act, Screen *me) {
                         if (saveSlot[currentSaveSlot].name[0] == 13) {
                             me->currentSpot = 2;
                             nextScreen = 5;
-                            choosingSlot = 0;
+                            selectingSlots = 0;
                             FadeScreenOutN();
-                            slotSelActive = FALSE;
+                            inputOK = FALSE;
                             initSpinOutFGObjects(3);
                             return TRUE;
                         }
-                        slotSelActive = FALSE;
+                        inputOK = FALSE;
                         doFades = 1;
                         FadeScreenOutN();
-                        choosingSlot = 0;
+                        selectingSlots = 0;
                         initSpinOutFGObjects(3);
                         return TRUE;
                     case 2:
                         if (saveSlot[currentSaveSlot].name[0] == 13) {
                             me->currentSpot = 2;
-                            choosingSlot = 0;
+                            selectingSlots = 0;
                             FadeScreenOutN();
                             initSpinOutFGObjects(3);
-                            slotSelActive = FALSE;
+                            inputOK = FALSE;
                             return TRUE;
                         }
-                        slotConfirmMode = 2;
-                        choosingSlot = 0;
+                        questionMode = 2;
+                        selectingSlots = 0;
                         me->currentSpot = 2;
                         break;
                     case 3:
-                        if (IsSaveSlotEmpty(currentSaveSlot) && slotCopyMode) {
+                        if (IsSaveSlotEmpty(currentSaveSlot) && copyMode) {
                             saveSlot[currentSaveSlot] = saveSlot[copyFromSlot];
                             SaveSlots();
                             SaveCRC();
-                            slotConfirmMode = 0;
-                            choosingSlot = 0;
-                            slotCopyMode = 0;
+                            questionMode = 0;
+                            selectingSlots = 0;
+                            copyMode = 0;
                             me->currentSpot = 3;
                         } else {
                             doCopyMode();
-                            if (!slotCopyMode) {
-                                choosingSlot = 0;
+                            if (!copyMode) {
+                                selectingSlots = 0;
                                 me->currentSpot = 3;
                             }
                         }
@@ -1213,12 +1210,12 @@ s32 SlotSelRun(s32 *act, Screen *me) {
                 }
                 break;
             case 1:
-                if (slotConfirmMode == 3) {
+                if (questionMode == 3) {
                     FadeScreenOutN();
-                    choosingSlot = 0;
+                    selectingSlots = 0;
                     me->currentSpot = 2;
                     initSpinOutFGObjects(3);
-                    slotSelActive = FALSE;
+                    inputOK = FALSE;
                     return TRUE;
                 }
                 currentSaveSlot = 0;
@@ -1229,7 +1226,7 @@ s32 SlotSelRun(s32 *act, Screen *me) {
                 }
                 me->currentSpot = 0;
                 selectedSlot = 1;
-                choosingSlot = 1;
+                selectingSlots = 1;
                 break;
             case 2:
                 for (i = 6; i > 0; i--) {
@@ -1239,7 +1236,7 @@ s32 SlotSelRun(s32 *act, Screen *me) {
                 }
                 me->currentSpot = 0;
                 selectedSlot = 2;
-                choosingSlot = 1;
+                selectingSlots = 1;
                 break;
             case 3:
                 currentSaveSlot = 0;
@@ -1250,12 +1247,12 @@ s32 SlotSelRun(s32 *act, Screen *me) {
                 }
                 me->currentSpot = 0;
                 selectedSlot = 3;
-                choosingSlot = 1;
+                selectingSlots = 1;
                 break;
             case 4:
                 FadeScreenOutN();
                 initSpinOutFGObjects(3);
-                slotSelActive = FALSE;
+                inputOK = FALSE;
                 return TRUE;
         }
     }
@@ -1286,17 +1283,17 @@ s32 SlotSelInit(s32 *act, Screen *me) {
     FindSetupAndAddOverlay(&slotsOL[4], "saveslot.bmp", 220, yPsn + 5, 0, 1);
     FindSetupAndAddOverlay(&slotsOL[5], "saveslot.bmp", 260, yPsn + 5, 0, 1);
     initSpinFGObjects(3);
-    spacing = 2;
-    credpos[0] = 1;
-    credyscale = 3;
-    credSpace = 0;
+    fgDirections[1] = 2;
+    fgDirections[0] = 1;
+    fgDirections[2] = 3;
+    fgDirections[3] = 0;
     SlotSelRun(act, me);
-    slotSelCancelled = 0;
+    aborting = 0;
     return TRUE;
 }
 
 s32 SlotSelDone(s32 *act, Screen *me) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         SlotSelRun(act, me);
         spinOutFGObjects(3);
         MoveGloveOL();
@@ -1312,18 +1309,18 @@ s32 SlotSelDone(s32 *act, Screen *me) {
     DestroyOverlay(&slotsOL[3]);
     DestroyOverlay(&slotsOL[4]);
     DestroyOverlay(&slotsOL[5]);
-    slotConfirmMode = 0;
+    questionMode = 0;
     FreeFGObjects();
-    if (!slotSelCancelled) {
+    if (!aborting) {
         if (me->spots[me->currentSpot].func) {
             activateOK = TRUE;
             me->spots[me->currentSpot].func();
             return FALSE;
         }
     } else {
-        slotSelCancelled = 0;
+        aborting = 0;
     }
-    slotSelActive = FALSE;
+    inputOK = FALSE;
     return TRUE;
 }
 

@@ -161,9 +161,9 @@ extern u8 dram_stack[];
 extern u8 gfxYieldBuf[];
 extern u32 rdp_output_len;
 extern s16 gfx_msg;
-extern u16 cfb0[];
+extern u16 cfb_16_a[];
 extern u8 jallocHeapStart[];
-extern u16 cfb1[];
+extern u16 cfb_16_b[];
 void MeasureFrameTicks(void);
 void LoadObjectBank(s32 num);
 extern struct Text *cheatText;
@@ -953,8 +953,8 @@ void MainProc(void *arg) {
     }
     dynamicp = &dynamic[draw_buffer];
     tlistp = tlistPointers[draw_buffer];
-    cfb_ptrs[0] = cfb0;
-    cfb_ptrs[1] = cfb1;
+    cfb_ptrs[0] = cfb_16_a;
+    cfb_ptrs[1] = cfb_16_b;
     CreateMessageQueues();
     MeasureFrameTicks();
     InitCRCTable();

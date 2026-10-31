@@ -349,7 +349,7 @@ typedef struct EnemyStat {
 
 extern ActorList actorList;
 extern ActorList collisionList;
-extern ActorList actorDistList;
+extern ActorList distList;
 extern Actor hand;
 extern Actor ball;
 extern Enemy enemies[];
