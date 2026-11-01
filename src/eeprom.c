@@ -10,8 +10,8 @@ extern u8 eepromMessageQueue[6];
 extern s16 eepromPresent;
 extern OSMesgQueue controllerMsgQ;
 extern u8 hiscoreTable[0x30];
-extern u8 bestTimes[6][0x1E];
-extern u8 bestTimesCopy[6][0x1E];
+extern BestTime bestTimes[6][5];
+extern BestTime bestTimesCopy[6][5];
 extern u8 hiscoreTableCopy[0x30];
 extern SaveSlot blankSlot;
 extern s16 currentSaveSlot;
@@ -240,12 +240,12 @@ void CheckCRC(void) {
     }
     crc = UpdateCRCData((u8 *)bestTimes, 0xC0);
     if (crc != eepromCRCS[7]) {
-        memcpy(bestTimes[0], bestTimesCopy[0], 0x1E);
-        memcpy(bestTimes[1], bestTimesCopy[1], 0x1E);
-        memcpy(bestTimes[2], bestTimesCopy[2], 0x1E);
-        memcpy(bestTimes[3], bestTimesCopy[3], 0x1E);
-        memcpy(bestTimes[4], bestTimesCopy[4], 0x1E);
-        memcpy(bestTimes[5], bestTimesCopy[5], 0x1E);
+        memcpy(bestTimes[0], bestTimesCopy[0], sizeof(bestTimes[0]));
+        memcpy(bestTimes[1], bestTimesCopy[1], sizeof(bestTimes[1]));
+        memcpy(bestTimes[2], bestTimesCopy[2], sizeof(bestTimes[2]));
+        memcpy(bestTimes[3], bestTimesCopy[3], sizeof(bestTimes[3]));
+        memcpy(bestTimes[4], bestTimesCopy[4], sizeof(bestTimes[4]));
+        memcpy(bestTimes[5], bestTimesCopy[5], sizeof(bestTimes[5]));
     }
 }
 

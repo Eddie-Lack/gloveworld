@@ -12,6 +12,8 @@ give the details.
 - **Controllers.** `handControl`, `ballControl` and `cameraInfo` hold the extra state of the hand, the ball and
   the camera. `player` holds the score, lives and power-ups. `gameInfo` holds the level, world, exit and fade
   state. `saveSlot[]` holds the save files.
+- **Best times.** `bestTimes` is `BestTime[6][5]` (180 bytes). Its EEPROM block (`EepromSaveBestTimes`,
+  `EepromLoadBestTimes`) and its CRC cover 0xC0 bytes: the table and the 12 bytes after it, up to `bestTimesCopy`.
 - **Lists.** Each kind of object sits in a doubly linked list with a head node (`actorList`, `platformList`,
   `bulletList`, `garibGroupList` and others), walked as `for (p = list.head.next; p != &list.head; p = next)`.
 - **Memory.** `JallocAlloc(size, type, tag)` allocates from the game's heap. The tag string (`"Act_Shad"`,
