@@ -146,3 +146,7 @@ Checked and left as they are:
   Vec3 slot that no listed local explains; perhaps an inlined helper or a nested block.
 - **Debris loops.** Eight functions have our `Debris *d` where the PC port has an `int` (`x` or `y`). The PC
   port's AddDebris returns an index, but the N64 one returns a pointer. The PC locals do not carry over.
+- **The `_objend` labels from the linker map.** `symbol_addrs.txt` holds 19 labels such as `_texBank12_data_objend`
+  and `_code_bss_objend`, all at odd addresses. They come from the map of another build
+  ([sources.md](sources.md#the-linker-map)), and none is used in `src/`. One, `_objBank9_data_objend`, lay inside the
+  PI manager's stack and was replaced by `piMgrStack`. The others have not been checked against this ROM.

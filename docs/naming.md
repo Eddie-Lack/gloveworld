@@ -924,6 +924,10 @@ file-scope globals. A name used by statics of two functions gets a short prefix.
 | D_801FB6A0 | idleThread | high | boot() creates it with thread id 1 and idlePriority and it starts func_80139ED4 (symbol also covers its 0x400-byte stack after the 0x1B0 OSThread) |
 | D_801FBC50 | piMessageBuf | high | osCreatePiManager message buffer of 12 entries (0x30 bytes), next to piMessageQ; sits at the top of the idle thread stack |
 | D_801FBC80 | piMessageQ | high | OSMesgQueue passed to osCreatePiManager (OS_PRIORITY_PIMGR), 0x18 bytes |
+| D_802AE990 | piMgrThread | high | osCreatePiManager passes it to osCreateThread and osStartThread for __osDevMgrMain and stores it in __osPiDevMgr; a 0x1B0 OSThread |
+| (none) | piMgrStack | high | 0x802AEB40, the 4096 bytes (OS_PIM_STACKSIZE) between piMgrThread and piMgrEventQueue; osCreatePiManager gives piMgrEventQueue's address as the thread's stack top. Replaces the map label `_objBank9_data_objend` (0x802AF201), which lay inside it |
+| D_802AFB40 | piMgrEventQueue | high | osCreatePiManager makes it with osCreateMesgQueue (one message, piMgrEventBuf) and gives it to osSetEventMesg for the PI event |
+| D_802AFB58 | piMgrEventBuf | high | the one-message buffer of piMgrEventQueue |
 | D_8028DA38 | overlay_dl_next | high | running write pointer into overlay_dl/overlay_dl2 (set per draw_buffer in game.c and DrawGraphics, fed to sp->rsp_dl_next and stored back in font_show_string and PrintOverlay) |
 
 The 80 ROM addresses (`D_B0...`) in banks.c are named after the message string of the bank that starts there:
