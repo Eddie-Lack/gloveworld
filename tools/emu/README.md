@@ -31,6 +31,11 @@ made with another ROM (it compares the MD5), and has no ini entry for the new RO
 of the state that holds the new ROM's MD5, and a data folder with an ini entry that refers to the retail ROM
 (`build/data-MD5`, `build/patched-*`; both untracked).
 
+The retail entry sets `Players=1`, so the patched ROM has no controller 2 and no pak on it. A state is also loaded
+from the copy, so a state loaded on the frame after its save is read before the core has written it.
+`Emu(..., retail_settings=False)` gives a patched ROM the core's defaults (two controllers, each with a pak) and
+loads states as they are.
+
 Savestates: mupen64plus `.st` files and Project64 `.pj` files both load. Keep them in `build/` (not tracked),
 since they hold a copy of the game's memory. A script can also save and reload states while it runs
 (`emu.save(name)`, `emu.load(path)`); both take effect at the next frame, so yield before loading a state that
@@ -51,6 +56,16 @@ Notes:
   menus and in play: each frame's five RSP tasks take four video frames to retire, and the scheduler waits for
   them (`gfxTasks` in `src/sched.c`). Hold buttons for at least 6 frames, or hold them until `frameCount`
   (0x802004E0) changes for an input that must land on one game frame.
+  A console takes three video frames for a game frame at 20 frames a second. A video made from every second video
+  frame at 30 frames a second therefore shows the game at about 3/5 of its speed. The game's own audio shows the
+  same: in Atlantis 1 it sends about 13,000 samples for each second of video frames, at a playback rate of
+  22,047 Hz.
+- With angrylion's worker threads (`Parallel`), two runs of the same ROM differ by a few video frames during
+  loads. With one thread, runs repeat exactly.
+- mupen64plus keeps one EEPROM save per ROM (in the core's save folder). A save left by an earlier run changes
+  the game's timing at boot.
+- The frame callback runs only when the video plugin shows a new frame, so a script stops advancing on a screen
+  that never changes.
 - `emu.py` attaches the SDL audio plugin with `SDL_AUDIODRIVER=dummy`. Without an audio plugin the game's main
   loop never runs: `frameCount` stays at 0 and no input is read.
 - `pad[].button[]` and `pressed[]` indices (from `buttonFlag`): 0 A, 1 B, 2 Z, 3 Start, 4 L, 5 R, 6 left,
