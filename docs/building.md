@@ -135,6 +135,8 @@ them, and the display list macros must expand to the same code as in the origina
   function can emit it.
 - splat writes a per-function `.s` file only for names that a C file references with `INCLUDE_ASM`.
 - splat can cut a jump table short. A rodata split change needs the owner's approval.
+- The `assets` segment ends at `recordKeyFilesRomEnd` (0x77DE20), the end of the ROM's data. The rest of the 8 MiB
+  is zero; `make` adds it when it copies the ELF into the ROM (`objcopy --pad-to=0x800000 --gap-fill=0x00`).
 
 ## Tools in `tools/`
 

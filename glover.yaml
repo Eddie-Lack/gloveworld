@@ -195,4 +195,4 @@ segments:
   - name: assets
     type: bin
     start: 0xF6680
-  - [0x800000]
+  - [0x77DE20]
