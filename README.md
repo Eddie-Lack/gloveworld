@@ -25,6 +25,7 @@ You need your own copy of the ROM!! It isn't in this repository!
 ## Thanks
 
 - [naclomi](https://github.com/naclomi) the goat! Figured out pretty much everything - the true hero
+- lord Clod for doing all the actual coding
 - The developers of N64 decompilation tools: [splat](https://github.com/ethteck/splat), [spimdisasm](https://github.com/Decompollaborate/spimdisasm), [asm-differ](https://github.com/simonlindholm/asm-differ), [decomp-permuter](https://github.com/simonlindholm/decomp-permuter) and [m2c](https://github.com/matt-kempster/m2c)
 - [decompals](https://github.com/decompals) for their builds of GCC 2.7.2: [mips-gcc-2.7.2](https://github.com/decompals/mips-gcc-2.7.2) and [SN64-gcc](https://github.com/decompals/SN64-gcc)
 - [RocketRet](https://github.com/RocketRet) for [modern-asn64](https://github.com/RocketRet/modern-asn64), which `tools/asn64.py` is adapted from
