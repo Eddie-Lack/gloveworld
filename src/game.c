@@ -1979,11 +1979,11 @@ void EndOfWorldScreen(void) {
     }
 }
 
-void StartCurrentLevel(void) {
+void NewWorldScreen(void) {
     StartNewLevel(gameInfo.level);
 }
 
-void NewWorldScreen(void) {
+void ErrorScreen(void) {
     SetFont(1);
     if (++errorCount == 1) {
         ClearAllText();

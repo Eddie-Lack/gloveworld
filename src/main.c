@@ -678,10 +678,10 @@ void RunGame(void *arg) {
                     EndOfWorldScreen();
                     break;
                 case 10:
-                    StartCurrentLevel();
+                    NewWorldScreen();
                     break;
                 case 13:
-                    NewWorldScreen();
+                    ErrorScreen();
                     break;
                 case 14:
                     animateActors = 1;

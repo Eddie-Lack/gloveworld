@@ -987,7 +987,7 @@ the same address as the first function of game.c.
 | D_801F830C | eowLettersN | high | iobj static lettersN of EndOfWorldScreen: strlen of the time-up string, the letter count. |
 | D_801F83D8 | eowBackdrop | high | iobj static backdrop of EndOfWorldScreen: the Backdrop allocated and added there; prefixed. |
 | D_801F91B0 | eowLight | high | iobj global eowLight: the GameLight set up with SetupLight in EndOfWorldScreen; stale symbol_addrs eowLight=0x801F91A8. |
-| D_801E760E | errorWait | high | iobj static wait of ErrorScreen (NewWorldScreen here): 200 after A is pressed, cleared on fade out. |
+| D_801E760E | errorWait | high | iobj static wait of ErrorScreen: 200 after A is pressed, cleared on fade out. |
 | D_801E7618 | gameWonWait | high | iobj static wait of GameWonScreen (func_801230A8): 200 after A or frame 200. |
 | D_801F83E0 | gameWonXPos | high | iobj static xPos of GameWonScreen: starts 320, eases to 1, x offset of the two text lines. |
 | D_801E7628 | exitDir | high | iobj static dir of CheckForExit (func_801246AC): angle rotating the puff vector, += exitspinspeed. |
@@ -1118,7 +1118,8 @@ plat, ai_spl, ... glob, eolgb, eolcl, trop00, puff, cross, horn00, note00, ohno,
 | func_80118B70 | SetupNameScr | high | iobj SetupNameScr: initnamescr setup of the name entry screen, ends with WaitNameScr (twin of SetupOKScr) |
 | func_8011A6EC | DoneNameScr | high | iobj DoneNameScr: spins the screen out, stores the 3 letter name into bestTimes, calls TimeTrialScr (twin of DoneOKScr) |
 | func_8011EAB8 | TimeTrialScreen | high | iobj TimeTrialScreen: 'timetrial' screen, sets up slot 6 on HARD, builds the level list with IsTimeTrialLevel/IsLevelAvailable; mode 15 handler |
-| func_80122D68 | StartCurrentLevel | medium | mode 10 handler: just StartNewLevel(gameInfo.level) (D_801E7531 is gameInfo.level); mode 10 is set when exiting to the way room |
+| func_80122D68 | NewWorldScreen | high | linker map: NewWorldScreen is 0x28 bytes and sits between EndOfWorldScreen and ErrorScreen, as this function does. Mode 10 handler: just StartNewLevel(gameInfo.level) (D_801E7531 is gameInfo.level); mode 10 is set when exiting to the way room. Named StartCurrentLevel before |
+| NewWorldScreen | ErrorScreen | high | linker map: ErrorScreen is 0x20C bytes and follows NewWorldScreen, as this function does. It draws the "errorscn" screen with gameInfo.message and "PRESS A TO CONTINUE"; Glover.iobj has the static errorWait in ErrorScreen |
 | func_801230A8 | GameWonScreen | high | iobj GameWonScreen: gameWonCount, hiscore table update, fade out after 200 frames |
 | func_80123514 | CheckForExits | medium | iobj CheckForExits: per frame exit timers (levelExitTimer, worldExitTimer, newLevExitTimer) and the exit type dispatch once the screen has faded; per platform part is CheckForExit |
 | func_801246AC | CheckForExit | high | iobj CheckForExit: per exit platform, spinning puffs and test of hand/ball against the exit radius; has the static dir (D_801E7628) |

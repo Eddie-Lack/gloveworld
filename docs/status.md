@@ -137,9 +137,7 @@ Checked and left as they are:
   with the owner and not objected to.
 - **Map names not taken.** The map has `spinBnc`, `minSpot` and `maxSpot` where we have the struct `fgSpin`.
   Three separate globals make the code 16 bytes longer, so the struct stays. The map's `bounceVel` sits at our
-  `conveyorVel`, but the sizes differ (0x10 against 0x18) and every use is a conveyor speed. The map's
-  `ErrorScreen` and `NewWorldScreen` are our `NewWorldScreen` and `StartCurrentLevel` (see
-  [sources.md](sources.md#the-linker-map)); the functions are not renamed yet.
+  `conveyorVel`, but the sizes differ (0x10 against 0x18) and every use is a conveyor speed.
 - **The author groups** are a working guess. Nothing in the data names a person, and three to seven groups fit
   almost equally well.
 - **Unexplained stack slots.** RotateVector2D, CalcMaxActorRadius, NearEdges and CheckPlaneForSliding have a

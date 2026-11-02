@@ -24,8 +24,8 @@ bytes larger, and its offset from the ROM drifts from -0x2F0 to -0x12A4.
 The map is from a PAL build. The final European ROM (NGVP, English, French and German) is the nearest known
 build. Its code is only 0x2C0 bytes smaller than the map's, and the offset between them changes at about 13
 places. The map has three functions that the USA ROM lacks (`FreeTitleScreen`, `CheckFrontProbe`, `ZCarBodge`).
-The front end's `NewWorldScreen` (0x28 bytes) and `ErrorScreen` (0x20C bytes) are this ROM's `StartCurrentLevel`
-and `NewWorldScreen`.
+The first pass gave the map's `NewWorldScreen` name to the function after it. That function is the map's
+`ErrorScreen`, and both now have their map names.
 
 The first names in `symbol_addrs.txt` were placed by aligning the map piece by piece:
 
