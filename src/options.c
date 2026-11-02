@@ -20,7 +20,7 @@
 #include "object.h"
 #include "present.h"
 
-extern s32 fgStill;
+extern s32 introAnimTime;
 extern s32 aimBallX;
 extern s32 aimBallY;
 extern f32 aimBallScale;
@@ -51,21 +51,21 @@ extern s32 cXLU;
 extern f32 Xos;
 extern f32 XosVel;
 extern s32 currentHiscoresLevel;
-extern s32 nextHiscoresLevel;
-extern f32 hiscoresBoxScale;
-extern f32 hiscoresBoxScaleAim;
+extern s32 nextLevel;
+extern f32 bgScale;
+extern f32 aimBgScale;
 extern f32 Xos1;
 extern Backdrop *pBackground;
-extern u32 nextLevel;
-extern s16 temptext;
+extern u32 licenceFrame;
+extern s16 D_801E64D8;
 extern s16 farPlaneDist;
 extern s32 osTvType;
 void LoadTextureBank(s32 num);
 void FindTexture(void *texPtr, u32 texID, s32 verbose);
 u32 UpdateCRC(char *ptr);
 extern Overlay fadeNiceOL[2];
-extern s32 areYouSure;
-extern s32 aimArRScale;
+extern s32 fadeAvailable;
+extern s32 fadeDir;
 
 void DestroyOverlay(Overlay *overlay);
 
@@ -75,8 +75,8 @@ extern s16 creditsTitle;
 extern f32 creditsPX;
 extern f32 creditsPY;
 extern u8 onlyDrawBackdrops;
-extern s32 creditsScroll;
-extern s32 creditsLineHeight;
+extern s32 credpos;
+extern s32 credSpace;
 extern Overlay ballPicOL;
 struct Screen;
 s32 DefWait(s32 *act, struct Screen *me);
@@ -88,19 +88,19 @@ extern s32 cheatCount;
 void ActivateCheat(s32 num, s32 show);
 extern s32 controllerActive;
 extern s32 fadeOutVal;
-extern f32 bgScale;
+extern f32 fadeAdd;
 extern struct Actor *foregroundObjects[];
 extern s32 numForegroundObjects;
 extern s32 animWaitTime;
 extern s32 currentScreen;
 extern s32 nextScreen;
 extern s32 frameCount;
-extern s32 aimBgScale;
+extern s32 fadeDone;
 extern Overlay arrOL[2];
 extern Overlay A1OL;
 extern Overlay A2OL;
 extern u32 cAAlpha;
-extern u32 aimArLScale;
+extern u32 cAAlphaAim;
 extern s32 currentAnim;
 
 typedef struct ScreenSpot {
@@ -145,18 +145,15 @@ extern u8 currentName[3];
 extern u8 enteredName[3];
 extern s16 currentSaveSlot;
 extern s32 toStartGame;
-extern s32 sfxVolume;
-extern s32 musicVolume;
+extern s32 curSoundFXVol;
+extern s32 curSoundMUSVol;
 extern Overlay titleSlide1OL[16];
 extern Overlay titleSlide2OL[16];
 s32 MainOptionsWait(s32 *act, struct Screen *me);
 extern Overlay sfxOL;
 extern Overlay musxOL;
-extern s32 spacing;
-extern s32 credSpace;
-extern s32 credpos;
+extern s32 fgDirections[];
 extern f32 D_NUM;
-extern s32 credyscale;
 void AnimateActor(Actor *actor, s32 animNum, s32 loop, s32 queue, f32 speed);
 s32 WaitOKScr();
 
@@ -166,7 +163,7 @@ extern s32 doFades;
 extern s16 musVol;
 void MusSetMasterVolume(s32 flags, s32 volume);
 extern s32 activateOK;
-extern s32 slotSelActive;
+extern s32 inputOK;
 extern s32 cameFromTitle;
 
 extern f32 fgXss[];
@@ -177,8 +174,8 @@ extern s32 spinInFrame;
 extern s32 spinInCmpFrame[];
 extern f32 bncAmt[];
 extern f32 spinInCount[4];
-extern u8 cfb0[];
-extern u8 cfb1[];
+extern u8 cfb_16_a[];
+extern u8 cfb_16_b[];
 
 s32 MainTitleWait();
 
@@ -186,13 +183,13 @@ extern char *menuStrings[][3];
 extern char *startMenuStrings[][3];
 extern char *optionMenuString[3];
 extern s32 SfxDelay;
-extern f32 fgSpinRot[];
+extern f32 jogAmt[];
 s32 MusStartEffect2(s32 number, s32 volume, s32 pan, s32 restartflag, s32 priority);
 
 s32 DoneOptionsWait(s32 *act, Screen *me) {
     s32 i;
 
-    if (!aimBgScale) {
+    if (!fadeDone) {
         MainOptionsWait(act, me);
         spinOutFGObjects(4);
         MoveGloveOL();
@@ -226,26 +223,26 @@ s32 MainOptionsWait(s32 *act, Screen *me) {
     NEW_TEXT(260, spinInCount[0] / 4.0f + 227.0f, 255, 255, 255, 255, 1.0f, 1.0f, 1,
              startMenuStrings[10][gameInfo.language], 1);
     SetFont(0);
-    if (!fgStill) {
-        foregroundObjects[0]->rot.x = fgSpinRot[2];
+    if (!introAnimTime) {
+        foregroundObjects[0]->rot.x = jogAmt[1];
         foregroundObjects[0]->rot.y = sinf(animFloat * 0.2) * 0.1 + 3.14;
         foregroundObjects[0]->rot.z = sinf(animFloat * 0.15) * 0.1;
-        foregroundObjects[1]->rot.x = fgSpinRot[1];
+        foregroundObjects[1]->rot.x = jogAmt[0];
         foregroundObjects[1]->rot.y = sinf(animFloat * 0.3) * 0.1 + 3.14;
         foregroundObjects[1]->rot.z = sinf(animFloat * 0.15) * 0.1;
-        foregroundObjects[2]->rot.x = fgSpinRot[4];
+        foregroundObjects[2]->rot.x = jogAmt[3];
         foregroundObjects[2]->rot.y = sinf(animFloat * 0.15) * 0.1 + 3.14;
         foregroundObjects[2]->rot.z = sinf(animFloat * 0.2) * 0.1;
-        foregroundObjects[3]->rot.x = fgSpinRot[3];
+        foregroundObjects[3]->rot.x = jogAmt[2];
         foregroundObjects[3]->rot.y = sinf(animFloat * 0.19) * 0.1 + 3.14;
         foregroundObjects[3]->rot.z = sinf(animFloat * 0.2) * 0.1;
     }
     switch (me->currentSpot) {
         case 0:
-            musicVolume += pad[ActiveController].stickX / 30;
+            curSoundMUSVol += pad[ActiveController].stickX / 30;
             break;
         case 1:
-            sfxVolume += pad[ActiveController].stickX / 30;
+            curSoundFXVol += pad[ActiveController].stickX / 30;
             if (pad[ActiveController].stickX) {
                 if (!SfxDelay) {
                     MusStartEffect2(131, 100, 128, 0, -1);
@@ -258,27 +255,27 @@ s32 MainOptionsWait(s32 *act, Screen *me) {
     }
     musxOL.x = 2.0f * spinInCount[2] + 260.0f;
     sfxOL.x = 270.0f - spinInCount[1];
-    if (sfxVolume < 0) {
-        sfxVolume = 0;
+    if (curSoundFXVol < 0) {
+        curSoundFXVol = 0;
     }
-    if (sfxVolume > 160) {
-        sfxVolume = 160;
+    if (curSoundFXVol > 160) {
+        curSoundFXVol = 160;
     }
-    if (musicVolume < 0) {
-        musicVolume = 0;
+    if (curSoundMUSVol < 0) {
+        curSoundMUSVol = 0;
     }
-    if (musicVolume > 160) {
-        musicVolume = 160;
+    if (curSoundMUSVol > 160) {
+        curSoundMUSVol = 160;
     }
     for (i = 0; i < 16; i++) {
         titleSlide1OL[i].x = 135 + i * 6 + spinInCount[2];
         titleSlide1OL[i].alpha = OPT_FADE;
         titleSlide2OL[i].x = 135 + i * 6 - 2.0f * spinInCount[1];
         titleSlide2OL[i].alpha = OPT_FADE;
-        if (i > (f32)(musicVolume - 5) / 10.0) {
+        if (i > (f32)(curSoundMUSVol - 5) / 10.0) {
             titleSlide1OL[i].alpha = OPT_FADE_HALF;
         }
-        if (i > (f32)(sfxVolume - 5) / 10.0) {
+        if (i > (f32)(curSoundFXVol - 5) / 10.0) {
             titleSlide2OL[i].alpha = OPT_FADE_HALF;
         }
     }
@@ -314,14 +311,14 @@ s32 MainOptionsWait(s32 *act, Screen *me) {
     TitleScreenCameraSpin2();
     DefWait(act, me);
     if (*act == 0 || *act == 1) {
-        fgSpinRot[me->currentSpot + 1] = 6.28f;
+        jogAmt[me->currentSpot] = 6.28f;
     }
-    fgSpinRot[1] *= 0.9;
-    fgSpinRot[2] *= 0.9;
-    fgSpinRot[3] *= 0.9;
-    fgSpinRot[4] *= 0.9;
+    jogAmt[0] *= 0.9;
+    jogAmt[1] *= 0.9;
+    jogAmt[2] *= 0.9;
+    jogAmt[3] *= 0.9;
     if ((*act == 4 || *act == 5) && (me->currentSpot >= 2 || *act == 5)) {
-        if (aimArRScale == 1 && !aimBgScale) {
+        if (fadeDir == 1 && !fadeDone) {
             return FALSE;
         }
         FadeScreenOutN();
@@ -335,7 +332,7 @@ s32 MainOptionsWait(s32 *act, Screen *me) {
 }
 
 s32 IntroOptionsWait(void) {
-    fgStill = 0;
+    introAnimTime = 0;
     return TRUE;
 }
 
@@ -343,10 +340,10 @@ s32 InitOptionsWait(s32 *act, Screen *me) {
     s32 i;
 
     FadeScreenInN();
-    fgSpinRot[1] = 0.0f;
-    fgSpinRot[2] = 0.0f;
-    fgSpinRot[3] = 0.0f;
-    fgSpinRot[4] = 0.0f;
+    jogAmt[0] = 0.0f;
+    jogAmt[1] = 0.0f;
+    jogAmt[2] = 0.0f;
+    jogAmt[3] = 0.0f;
     SetFont(0);
     for (i = 0; i < 16; i++) {
         FindSetupAndAddOverlay(&titleSlide1OL[i], "sliderbit.bmp", 155 + i * 6, 80, 0, 1);
@@ -356,7 +353,7 @@ s32 InitOptionsWait(s32 *act, Screen *me) {
         titleSlide1OL[i].b = 255;
         titleSlide1OL[i].scaleX = 990;
         titleSlide1OL[i].scaleY = 1450 - (16 - i) * 60;
-        if (i > (f32)(musicVolume - 5) / 10.0) {
+        if (i > (f32)(curSoundMUSVol - 5) / 10.0) {
             titleSlide1OL[i].alpha = 90;
         }
         FindSetupAndAddOverlay(&titleSlide2OL[i], "sliderbit.bmp", 155 + i * 6, 110, 0, 1);
@@ -366,7 +363,7 @@ s32 InitOptionsWait(s32 *act, Screen *me) {
         titleSlide2OL[i].b = 80;
         titleSlide2OL[i].scaleX = 990;
         titleSlide2OL[i].scaleY = 1450 - (16 - i) * 60;
-        if (i > (f32)(sfxVolume - 5) / 10.0) {
+        if (i > (f32)(curSoundFXVol - 5) / 10.0) {
             titleSlide2OL[i].alpha = 90;
         }
     }
@@ -397,10 +394,10 @@ s32 InitOptionsWait(s32 *act, Screen *me) {
     musxOL.frames = (SpriteFrames *)&spriteFrameList[NOTE_ANIM];
     musxOL.behind = 0;
     initSpinFGObjects(4);
-    credpos = 3;
-    spacing = 0;
-    credyscale = 1;
-    credSpace = 2;
+    fgDirections[0] = 3;
+    fgDirections[1] = 0;
+    fgDirections[2] = 1;
+    fgDirections[3] = 2;
     MainOptionsWait(act, me);
     return TRUE;
 }

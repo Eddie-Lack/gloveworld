@@ -21,7 +21,7 @@
 #include "object.h"
 #include "present.h"
 
-extern s32 fgStill;
+extern s32 introAnimTime;
 extern s32 aimBallX;
 extern s32 aimBallY;
 extern f32 aimBallScale;
@@ -51,21 +51,21 @@ extern s32 cXLU;
 extern s32 Xos;
 extern s32 XosVel;
 extern s32 currentHiscoresLevel;
-extern s32 nextHiscoresLevel;
-extern f32 hiscoresBoxScale;
-extern f32 hiscoresBoxScaleAim;
+extern s32 nextLevel;
+extern f32 bgScale;
+extern f32 aimBgScale;
 extern f32 Xos1;
 extern Backdrop *pBackground;
-extern u32 nextLevel;
-extern s16 temptext;
+extern u32 licenceFrame;
+extern s16 D_801E64D8;
 extern s16 farPlaneDist;
 extern s32 osTvType;
 void LoadTextureBank(s32 num);
 void FindTexture(void *texPtr, u32 texID, s32 verbose);
 u32 UpdateCRC(char *ptr);
 extern Overlay fadeNiceOL[2];
-extern s32 areYouSure;
-extern s32 aimArRScale;
+extern s32 fadeAvailable;
+extern s32 fadeDir;
 
 void DestroyOverlay(Overlay *overlay);
 
@@ -75,8 +75,8 @@ extern s16 creditsTitle;
 extern f32 creditsPX;
 extern f32 creditsPY;
 extern u8 onlyDrawBackdrops;
-extern s32 creditsScroll;
-extern s32 creditsLineHeight;
+extern s32 credpos;
+extern s32 credSpace;
 extern Overlay ballPicOL;
 struct Screen;
 s32 DefWait(s32 *act, struct Screen *me);
@@ -88,19 +88,19 @@ extern s32 cheatCount;
 void ActivateCheat(s32 num, s32 show);
 extern s32 controllerActive;
 extern s32 fadeOutVal;
-extern f32 bgScale;
+extern f32 fadeAdd;
 extern struct Actor *foregroundObjects[];
 extern s32 numForegroundObjects;
 extern s32 animWaitTime;
 extern s32 currentScreen;
 extern s32 nextScreen;
 extern s32 frameCount;
-extern s32 aimBgScale;
+extern s32 fadeDone;
 extern Overlay arrOL[2];
 extern Overlay A1OL;
 extern Overlay A2OL;
 extern u32 cAAlpha;
-extern u32 aimArLScale;
+extern u32 cAAlphaAim;
 extern s32 currentAnim;
 
 typedef struct ScreenSpot {
@@ -147,18 +147,15 @@ extern u8 currentName[3];
 extern u8 enteredName[3];
 extern s16 currentSaveSlot;
 extern s32 toStartGame;
-extern s32 sfxVolume;
-extern s32 musicVolume;
+extern s32 curSoundFXVol;
+extern s32 curSoundMUSVol;
 extern Overlay titleSlide1OL[16];
 extern Overlay titleSlide2OL[16];
 s32 MainOptionsWait(s32 *act, struct Screen *me);
 extern Overlay sfxOL;
 extern Overlay musxOL;
-extern s32 spacing;
-extern s32 credSpace;
-extern s32 credpos;
+extern s32 fgDirections[];
 extern f32 D_NUM;
-extern s32 credyscale;
 void AnimateActor(Actor *actor, s32 animNum, s32 loop, s32 queue, f32 speed);
 s32 WaitOKScr(s32 *act, Screen *me);
 s32 TimeTrialScr(s32 *act, Screen *me);
@@ -173,11 +170,11 @@ extern s32 doFades;
 extern s16 musVol;
 void MusSetMasterVolume(s32 flags, s32 volume);
 extern s32 activateOK;
-extern s32 slotSelActive;
+extern s32 inputOK;
 extern char letters[];
 extern s32 currentLetter;
 extern u32 lettersY;
-extern s32 nameFinished;
+extern s32 nameWait;
 extern u32 lettersX;
 extern s32 cameFromTitle;
 
@@ -189,9 +186,9 @@ extern s32 spinInFrame;
 extern s32 spinInCmpFrame[];
 extern f32 bncAmt[];
 extern f32 spinInCount[4];
-extern u8 cfb0[];
-extern u8 cfb1[];
-extern f32 fgSpinRot[];
+extern u8 cfb_16_a[];
+extern u8 cfb_16_b[];
+extern f32 jogAmt[];
 
 s32 MainTitleWait();
 
@@ -205,12 +202,12 @@ extern u32 centerDY;
 extern s32 debouncePadX;
 
 s32 SetupNameScr(s32 *act, Screen *me) {
-    slotSelActive = 1;
+    inputOK = 1;
     FadeScreenInN();
     SetFont(0);
     lettersX = strlen(letters) / lettersY;
     currentLetter = 0;
-    nameFinished = 0;
+    nameWait = 0;
     initFGObject("titleboxb.ndo", 0.0f, -38.0f, 400.0f, 0.1f, 0.0f, 3.14f, 2.0f, 3.8f, 1.0f, 255);
     initFGObject("titleboxbf.ndo", 0.0f, -38.0f, 400.0f, 0.1f, 0.0f, 3.14f, 2.0f, 3.8f, 1.0f, 100);
     initSpinFGObjects(2);
@@ -224,10 +221,10 @@ s32 SetupOKScr(s32 *act, Screen *me) {
     controllerActive = FALSE;
     FadeScreenInN();
     SetFont(0);
-    fgSpinRot[1] = 0.0f;
-    fgSpinRot[2] = 0.0f;
-    fgSpinRot[3] = 0.0f;
-    fgSpinRot[4] = 0.0f;
+    jogAmt[0] = 0.0f;
+    jogAmt[1] = 0.0f;
+    jogAmt[2] = 0.0f;
+    jogAmt[3] = 0.0f;
     initFGObject("newwave.ndo", 0.0f, -30.0f, 400.0f, 0.1f, 0.0f, 3.14f, 1.0f, 1.0f, 1.0f, 255);
     InitActorStructures(foregroundObjects[0], 4);
     AnimateActor(foregroundObjects[0], 0, 1, 1, 1.0f);
@@ -239,10 +236,10 @@ s32 SetupOKScr(s32 *act, Screen *me) {
     toStartGame = 0;
     me->currentSpot = 1;
     initSpinFGObjects(2);
-    spacing = 3;
-    credSpace = 2;
-    credpos = 1;
-    credyscale = 0;
+    fgDirections[1] = 3;
+    fgDirections[3] = 2;
+    fgDirections[0] = 1;
+    fgDirections[2] = 0;
     *act = 6;
     WaitOKScr(act, me);
     return TRUE;
@@ -295,22 +292,22 @@ s32 WaitOKScr(s32 *act, Screen *me) {
              me->currentSpot == 1 ? (u8)(sinf(animFloat * 0.65) * 90.0f + 128.0f + 38.0f) : 255,
              me->currentSpot != 1 ? 0.8f : 1.0f, me->currentSpot != 1 ? 0.8f : 1.0f, 1,
              difficultyStrings[1][gameInfo.language], 1);
-    if (aimBgScale) {
+    if (fadeDone) {
         DefWait(act, me);
     }
-    foregroundObjects[0]->rot.x = fgSpinRot[2];
+    foregroundObjects[0]->rot.x = jogAmt[1];
     foregroundObjects[0]->rot.y = sinf(animFloat * 0.2) * 0.1 + 3.14;
     foregroundObjects[0]->rot.z = sinf(animFloat * 0.15) * 0.1;
-    foregroundObjects[1]->rot.x = fgSpinRot[1];
+    foregroundObjects[1]->rot.x = jogAmt[0];
     foregroundObjects[1]->rot.y = sinf(animFloat * 0.3) * 0.1 + 3.14;
     foregroundObjects[1]->rot.z = sinf(animFloat * 0.15) * 0.1;
     if (*act == 0 || *act == 1) {
-        fgSpinRot[me->currentSpot + 1] = 6.28f;
+        jogAmt[me->currentSpot] = 6.28f;
     }
-    fgSpinRot[1] *= 0.9;
-    fgSpinRot[2] *= 0.9;
-    fgSpinRot[3] *= 0.9;
-    fgSpinRot[4] *= 0.9;
+    jogAmt[0] *= 0.9;
+    jogAmt[1] *= 0.9;
+    jogAmt[2] *= 0.9;
+    jogAmt[3] *= 0.9;
     if (*act == 5) {
         nextScreen = *act;
         toStartGame = 0;
@@ -319,7 +316,7 @@ s32 WaitOKScr(s32 *act, Screen *me) {
         return TRUE;
     }
     if (*act == 4) {
-        if (aimArRScale == 1 && !aimBgScale) {
+        if (fadeDir == 1 && !fadeDone) {
             return FALSE;
         }
         switch (me->currentSpot) {            case 0:
@@ -469,11 +466,11 @@ s32 WaitNameScr(s32 *act, Screen *me) {
         }
         debouncePadX = 7;
     }
-    if ((aimBgScale || aimArRScale != 1) && controllerActive && pad[ActiveController].pressed[BUTTON_Z] && strlen(enteredName)) {
+    if ((fadeDone || fadeDir != 1) && controllerActive && pad[ActiveController].pressed[BUTTON_Z] && strlen(enteredName)) {
         enteredName[strlen(enteredName) - 1] = '\0';
         PlaySampleNot3D(217, 100, 128, 128);
     }
-    if (controllerActive && pad[ActiveController].pressed[BUTTON_A] && !nameFinished) {
+    if (controllerActive && pad[ActiveController].pressed[BUTTON_A] && !nameWait) {
         PlaySampleNot3D(216, 100, 128, 128);
         if (letters[currentLetter] == '$') {
             if (strlen(enteredName)) {
@@ -483,7 +480,7 @@ s32 WaitNameScr(s32 *act, Screen *me) {
             FadeScreenOutN();
             nextScreen = 10;
             initSpinOutFGObjects(2);
-            nameFinished = 1;
+            nameWait = 1;
             return TRUE;
         } else if (strlen(enteredName) < 3) {
             enteredName[strlen(enteredName)] = letters[currentLetter];
@@ -511,7 +508,7 @@ s32 WaitNameScr(s32 *act, Screen *me) {
 }
 
 s32 DoneNameScr(s32 *act, Screen *me) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         spinOutFGObjects(2);
         WaitNameScr(act, me);
         MoveGloveOL();
@@ -530,7 +527,7 @@ s32 DoneNameScr(s32 *act, Screen *me) {
 }
 
 s32 WaitContinueScr(void) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         MoveGloveOL();
         return FALSE;
     }
@@ -538,28 +535,28 @@ s32 WaitContinueScr(void) {
     SetFadeColour(0, 0, 0);
     gameInfo.fade2 = gameInfo.fade = 300;
     UpdateFade();
-    memset(cfb0, 0, 0x25800);
-    memset(cfb1, 0, 0x25800);
+    memset(cfb_16_a, 0, 0x25800);
+    memset(cfb_16_b, 0, 0x25800);
     ActContinueGame();
     return TRUE;
 }
 
 s32 WaitCheatScr(void) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         MoveGloveOL();
         return FALSE;
     }
     SetFadeColour(0, 0, 0);
     gameInfo.fade2 = gameInfo.fade = 300;
     UpdateFade();
-    memset(cfb0, 0, 0x25800);
-    memset(cfb1, 0, 0x25800);
+    memset(cfb_16_a, 0, 0x25800);
+    memset(cfb_16_b, 0, 0x25800);
     CheatStartGame(2);
     return TRUE;
 }
 
 s32 DoneOKScr(s32 *act, Screen *me) {
-    if (!aimBgScale) {
+    if (!fadeDone) {
         WaitOKScr(act, me);
         spinOutFGObjects(2);
         if (toStartGame) {
@@ -572,8 +569,8 @@ s32 DoneOKScr(s32 *act, Screen *me) {
         SetFadeColour(0, 0, 0);
         gameInfo.fade2 = gameInfo.fade = 300;
         UpdateFade();
-        memset(cfb0, 0, 0x25800);
-        memset(cfb1, 0, 0x25800);
+        memset(cfb_16_a, 0, 0x25800);
+        memset(cfb_16_b, 0, 0x25800);
         ActStartGame();
     }
     return TRUE;

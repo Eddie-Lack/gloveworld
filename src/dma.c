@@ -30,7 +30,7 @@ extern MusConfig musicPlayer;
 extern u8 musicPriority;
 extern s32 musicMemoryUsed;
 extern u8 pbankBuffer[];
-extern u8 musicHeap[];
+extern u8 audio_memory[];
 extern u8 _pbank1SegmentRomStart[];
 extern u8 _pbank1SegmentRomEnd[];
 extern u8 _pbank2SegmentRomStart[];
@@ -53,7 +53,7 @@ void InitMusicDriver(void) {
     musicPlayer.channels = 24;
     musicPlayer.sched = sched;
     musicPlayer.thread_priority = musicPriority;
-    musicPlayer.heap = musicHeap;
+    musicPlayer.heap = audio_memory;
     musicPlayer.heap_length = 0x493E0;
     musicPlayer.ptr = audioCtrl.ptr;
     musicPlayer.wbk = _wbank2SegmentRomStart;

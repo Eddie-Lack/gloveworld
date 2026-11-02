@@ -21,6 +21,12 @@ messages (`"ACOSBETTER"`), file names in level data, and the credits text.
 Static functions and locals are not in it. It comes from a **different build** of the game: its text is 0xFB0
 bytes larger, and its offset from the ROM drifts from -0x2F0 to -0x12A4.
 
+The map is from a PAL build. The final European ROM (NGVP, English, French and German) is the nearest known
+build. Its code is only 0x2C0 bytes smaller than the map's, and the offset between them changes at about 13
+places. The map has three functions that the USA ROM lacks (`FreeTitleScreen`, `CheckFrontProbe`, `ZCarBodge`).
+The first pass gave the map's `NewWorldScreen` name to the function after it. That function is the map's
+`ErrorScreen`, and both now have their map names.
+
 The first names in `symbol_addrs.txt` were placed by aligning the map piece by piece:
 
 - A function name was kept where the map's size for it matched the ROM's function size.
@@ -28,7 +34,9 @@ The first names in `symbol_addrs.txt` were placed by aligning the map piece by p
   placed neighbours agreed.
 
 Several data names turned out to be placed at the wrong address (blocks in collision.c and hand.c were 8 bytes
-out, the front end 0xF0 out). So check every map-derived data name against its uses before relying on it.
+out). The front-end data (0x801E64B8 to 0x801E6790) lines up with the map at exactly -0x12A0, which the PC
+port's globals in that block confirm. Names there that had been placed 0xF0 or 0x174 out were moved to that
+alignment. So check every map-derived data name against its uses before relying on it.
 Corrections are logged in [naming.md](naming.md#globals).
 
 ## The PC port's Glover.iobj

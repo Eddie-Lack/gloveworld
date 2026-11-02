@@ -67,7 +67,7 @@ void QuaternionMultiply(Quat *dest, Quat *src1, Quat *src2);
 
 INCLUDE_ASM("asm/nonmatchings/object", pad_801425C8);
 
-extern ActorList actorDistList;
+extern ActorList distList;
 extern Vtx objectsVtx[2][800];
 extern Vtx *vtxPtr;
 extern u8 myMicrocode;
@@ -273,8 +273,8 @@ void CreateObjects(void) {
     if (ballControl.numPlasters) {
         UpdatePlasters();
     }
-    actorDistList.count = 0;
-    actorDistList.head.distNext = actorDistList.head.distPrev = &actorDistList.head;
+    distList.count = 0;
+    distList.head.distNext = distList.head.distPrev = &distList.head;
     for (ptr = actorList.head.next; ptr != &actorList.head; ptr = ptr->next) {
         ptr->distSq = DistanceBetweenPointsSquared(&ptr->pos, &camera.pos);
         AddActorToDistList(ptr);
@@ -294,7 +294,7 @@ void CreateObjects(void) {
         gDPSetFogColor(glistp++, fog.r, fog.g, fog.b, 255);
         gSPFogPosition(glistp++, fog.min, fog.max);
     }
-    for (ptr = actorDistList.head.distNext; ptr != &actorDistList.head; ptr = ptr->distNext) {
+    for (ptr = distList.head.distNext; ptr != &distList.head; ptr = ptr->distNext) {
         if (!(ptr->inst->obj->flags & 2) && !(ptr->inst->obj->flags & 0x80)) {
             if (!(ptr->inst->obj->flags & 8)) {
                 ProcessBackgroundLights(ptr);
@@ -323,7 +323,7 @@ void CreateObjects(void) {
         SetupViewing();
         ApplyGlobalTransformations();
     }
-    for (ptr = actorDistList.head.distPrev; ptr != &actorDistList.head; ptr = ptr->distPrev) {
+    for (ptr = distList.head.distPrev; ptr != &distList.head; ptr = ptr->distPrev) {
         if ((ptr->inst->obj->flags & 2) && !(ptr->inst->obj->flags & 0x80)) {
             if (!(ptr->inst->obj->flags & 8)) {
                 ProcessBackgroundLights(ptr);
@@ -343,7 +343,7 @@ void CreateObjects(void) {
     if (gameInfo.mode == 4 || gameInfo.mode == 5) {
         DrawHelper();
         aiSurf = 1;
-        for (ptr = actorDistList.head.distNext; ptr != &actorDistList.head; ptr = ptr->distNext) {
+        for (ptr = distList.head.distNext; ptr != &distList.head; ptr = ptr->distNext) {
             if (ptr->inst->obj->flags & 0x80) {
                 if (!(ptr->inst->obj->flags & 8)) {
                     ProcessBackgroundLights(ptr);

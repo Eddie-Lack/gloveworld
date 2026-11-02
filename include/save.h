@@ -14,8 +14,8 @@ typedef struct SaveSlot {
     /* 0x12 */ u8 hubTarget;
     /* 0x13 */ u8 hubLevel;
     /* 0x14 */ s32 visited;
-    /* 0x18 */ s16 sfxVolume;
-    /* 0x1A */ s16 musicVolume;
+    /* 0x18 */ s16 curSoundFXVol;
+    /* 0x1A */ s16 curSoundMUSVol;
 } SaveSlot; /* size = 0x1C */
 
 extern SaveSlot saveSlot[6];

@@ -52,9 +52,9 @@ extern u32 *ballTextureData2;
 extern u32 *ballTexturePalette2;
 extern u32 *ballBitTextureData;
 extern u32 *ballBitTexturePalette;
-extern u32 *handShinTextureData[2];
-extern u32 *handShinTexturePalette[2];
-extern Texture *handShinTextures[2];
+extern u32 *handTextureData[2];
+extern u32 *handTexturePalette[2];
+extern Texture *handTextureList[2];
 extern f32 handInertia;
 extern void *snowBallBit;
 
@@ -489,13 +489,13 @@ void ActivateCollectable(s32 type, s32 timeVal) {
         case 3:
             handControl.suctionTime = 0;
             hand.flags |= 0xC000;
-            *handShinTextureData[0] = (u32)handShinTextures[1]->data;
-            *handShinTextureData[1] = (u32)handShinTextures[1]->data;
-            if (handShinTexturePalette[0]) {
-                *handShinTexturePalette[0] = (u32)handShinTextures[1]->palette;
+            *handTextureData[0] = (u32)handTextureList[1]->data;
+            *handTextureData[1] = (u32)handTextureList[1]->data;
+            if (handTexturePalette[0]) {
+                *handTexturePalette[0] = (u32)handTextureList[1]->palette;
             }
-            if (handShinTexturePalette[1]) {
-                *handShinTexturePalette[1] = (u32)handShinTextures[1]->palette;
+            if (handTexturePalette[1]) {
+                *handTexturePalette[1] = (u32)handTextureList[1]->palette;
             }
             CreatePuffCircle(&hand.pos);
             PlaySample(146, &hand.pos, 100, 200);
@@ -659,13 +659,13 @@ void DeactivateCollectable(s32 type) {
             SubActor(&handControl.orbiter);
             break;
         case 3:
-            *handShinTextureData[0] = (u32)handShinTextures[0]->data;
-            *handShinTextureData[1] = (u32)handShinTextures[0]->data;
-            if (handShinTexturePalette[0]) {
-                *handShinTexturePalette[0] = (u32)handShinTextures[0]->palette;
+            *handTextureData[0] = (u32)handTextureList[0]->data;
+            *handTextureData[1] = (u32)handTextureList[0]->data;
+            if (handTexturePalette[0]) {
+                *handTexturePalette[0] = (u32)handTextureList[0]->palette;
             }
-            if (handShinTexturePalette[1]) {
-                *handShinTexturePalette[1] = (u32)handShinTextures[0]->palette;
+            if (handTexturePalette[1]) {
+                *handTexturePalette[1] = (u32)handTextureList[0]->palette;
             }
             handControl.suctionPlane = NULL;
             hand.flags &= ~0xC000;

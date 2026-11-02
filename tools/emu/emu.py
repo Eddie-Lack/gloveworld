@@ -100,9 +100,13 @@ def state_for(path, md5):
 
 
 class Emu:
-    def __init__(self, rom, gfx, out, verbose=False, debug=False):
+    def __init__(self, rom, gfx, out, verbose=False, debug=False, retail_settings=True):
+        """retail_settings: a patched ROM gets the retail ROM's entry in the core's ini (data_dir_for) and copies of
+        its savestates with its own MD5 (state_for). False gives it the core's defaults (two controllers, each
+        with a pak) and loads states as they are."""
         self.out = out
         self.debug = debug
+        self.retail_settings = retail_settings
         data = open(rom, 'rb').read()
         self.md5 = hashlib.md5(data).hexdigest().upper()
         self._breaks = {}
@@ -114,7 +118,7 @@ class Emu:
         self._framecb = FRAMECB(self._frame)
         cfg = os.path.join(HERE, 'build', 'cfg')
         os.makedirs(cfg, exist_ok=True)
-        self._check(self.core.CoreStartup(0x020001, cfg.encode(), data_dir_for(self.md5).encode(), None,
+        self._check(self.core.CoreStartup(0x020001, cfg.encode(), (data_dir_for(self.md5) if retail_settings else DATADIR).encode(), None,
                                           self._debugcb, None, self._statecb), 'CoreStartup')
         if debug:
             handle = ctypes.c_void_p()
@@ -189,6 +193,9 @@ class Emu:
     def w32(self, a, v): self._put(a, struct.pack('>I', v & 0xFFFFFFFF))
     def wf(self, a, v): self._put(a, struct.pack('>f', v))
 
+    def _state(self, path):
+        return state_for(path, self.md5) if self.retail_settings else path
+
     def hold(self, *names, x=0, y=0):
         v = 0
         for n in names:
@@ -216,7 +223,7 @@ class Emu:
 
     def load(self, path):
         """Load a savestate during a run. The core applies it before the next frame; yield at least once after."""
-        self._check(self.core.CoreDoCommand(CMD_STATE_LOAD, 0, os.path.abspath(state_for(path, self.md5)).encode()), 'state load')
+        self._check(self.core.CoreDoCommand(CMD_STATE_LOAD, 0, os.path.abspath(self._state(path)).encode()), 'state load')
 
     def cheat(self, name, codes):
         arr = (CheatCode * len(codes))(*[CheatCode(a, v) for a, v in codes])
@@ -261,7 +268,7 @@ class Emu:
         off = ctypes.c_int(0)
         self.core.CoreDoCommand(CMD_STATE_SET, CORE_SPEED_LIMITER, ctypes.byref(off))
         if state:
-            self._check(self.core.CoreDoCommand(CMD_STATE_LOAD, 0, os.path.abspath(state_for(state, self.md5)).encode()), 'state load')
+            self._check(self.core.CoreDoCommand(CMD_STATE_LOAD, 0, os.path.abspath(self._state(state)).encode()), 'state load')
         self.core.CoreDoCommand(CMD_EXECUTE, 0, None)
         self.core.CoreDoCommand(CMD_ROM_CLOSE, 0, None)
         for kind in (PLUGIN_RSP, PLUGIN_INPUT, PLUGIN_AUDIO, PLUGIN_GFX):

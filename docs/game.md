@@ -12,6 +12,8 @@ give the details.
 - **Controllers.** `handControl`, `ballControl` and `cameraInfo` hold the extra state of the hand, the ball and
   the camera. `player` holds the score, lives and power-ups. `gameInfo` holds the level, world, exit and fade
   state. `saveSlot[]` holds the save files.
+- **Best times.** `bestTimes` is `BestTime[6][5]` (180 bytes). Its EEPROM block (`EepromSaveBestTimes`,
+  `EepromLoadBestTimes`) and its CRC cover 0xC0 bytes: the table and the 12 bytes after it, up to `bestTimesCopy`.
 - **Lists.** Each kind of object sits in a doubly linked list with a head node (`actorList`, `platformList`,
   `bulletList`, `garibGroupList` and others), walked as `for (p = list.head.next; p != &list.head; p = next)`.
 - **Memory.** `JallocAlloc(size, type, tag)` allocates from the game's heap. The tag string (`"Act_Shad"`,
@@ -161,8 +163,8 @@ The debug controls in `ProcessInputPersonal` are:
 | D-pad left, right | play the previous or next of the 61 songs |
 | D-pad right held, down held | turn the background ambient light |
 | D-pad up held | make a ring of puffs at Glover |
-| R | toggle `inertia`: the hand's acceleration is divided by 3, or multiplied back |
+| R | toggle `inertia` (a `u8`, 1 in the ROM's data): the first press sets it to 0 and multiplies the hand's acceleration by 3, the next sets it back to 1 and divides it by 3. With `inertia` 0, `actor.c` zeroes each actor's speed and spin every frame and skips gravity |
 | A held, then B | quit to the menu; in record mode it first writes the recording to the PC |
 | C-up held, C-down held | push Glover (or the ball, when he holds it) up or down |
-| Start | `HurtBall` |
+| Start | `HurtBall`: a plaster on the ball and 60 frames before the next hurt; the ball bursts at `maxPlasters` (4, 3 or 2 by difficulty) or when it is the crystal ball. The bowling ball and the ball bearing are not hurt |
 

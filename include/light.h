@@ -44,7 +44,7 @@ typedef struct BackgroundLighting {
     /* 0x08 */ LightList lights;
 } BackgroundLighting;
 
-extern BackgroundLighting bgLighting;
+extern BackgroundLighting backgroundLightList;
 extern LightList handLightList;
 
 void AddLightning(Vec3 *start, Vec3 *end, u8 r, u8 g, u8 b, u8 segments, s16 lifetime, s16 flags, f32 jagginess,

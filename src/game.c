@@ -201,8 +201,8 @@ extern Actor starOverlay;
 extern Texture whiteTex;
 extern u8 fadeTextureData[];
 
-extern s32 sfxVolume;
-extern s32 musicVolume;
+extern s32 curSoundFXVol;
+extern s32 curSoundMUSVol;
 extern s32 ballLeftBehind;
 extern s32 numGaribs;
 extern Vec3 ballEnd;
@@ -716,7 +716,7 @@ void FreeLevel2(s32 full) {
         wind2 = wind->next;
         JallocFree(&wind);
     }
-    for (light = bgLighting.lights.head.next; light != &bgLighting.lights.head; light = light2) {
+    for (light = backgroundLightList.lights.head.next; light != &backgroundLightList.lights.head; light = light2) {
         light2 = light->next;
         JallocFree(&light);
     }
@@ -1263,8 +1263,8 @@ void StartNewGame(void) {
     ballLeftBehind = -1;
     numGaribs = 0;
     ZERO_VECTOR(&ballEnd);
-    saveSlot[currentSaveSlot].sfxVolume = sfxVolume;
-    saveSlot[currentSaveSlot].musicVolume = musicVolume;
+    saveSlot[currentSaveSlot].curSoundFXVol = curSoundFXVol;
+    saveSlot[currentSaveSlot].curSoundMUSVol = curSoundMUSVol;
     for (i = 6, p = &gameInfo.worldComplete[6]; i >= 0; i--) {
         *p-- = 0;
     }
@@ -1287,8 +1287,8 @@ void ContinueGame(void) {
     s32 i;
 
     numGaribs = 0;
-    sfxVolume = saveSlot[currentSaveSlot].sfxVolume;
-    musicVolume = saveSlot[currentSaveSlot].musicVolume;
+    curSoundFXVol = saveSlot[currentSaveSlot].curSoundFXVol;
+    curSoundMUSVol = saveSlot[currentSaveSlot].curSoundMUSVol;
     for (i = 1; i < 7; i++) {
         if ((saveSlot[currentSaveSlot].levels >> (i * 5 - 2)) & 1) {
             gameInfo.worldComplete[i] = 1;
@@ -1875,7 +1875,7 @@ void EndOfWorldScreen(void) {
         SetupLight(&eowLight, 255, 130, 255, 255, 130, 255, 4.0f, 1.0f, 0.0f);
         eowLight.next = NULL;
         AddBackgroundLight(&eowLight);
-        SetupAmbientLight(&bgLighting.ambient, 100, 80, 80);
+        SetupAmbientLight(&backgroundLightList.ambient, 100, 80, 80);
         SetFadeColour(0, 0, 0);
         InitScreenDebris();
         PrepareSong(HASBRO_TRACK);
@@ -1979,11 +1979,11 @@ void EndOfWorldScreen(void) {
     }
 }
 
-void StartCurrentLevel(void) {
+void NewWorldScreen(void) {
     StartNewLevel(gameInfo.level);
 }
 
-void NewWorldScreen(void) {
+void ErrorScreen(void) {
     SetFont(1);
     if (++errorCount == 1) {
         ClearAllText();
@@ -2863,8 +2863,8 @@ void UpdatePause(void) {
         MusSetMasterVolume(2, musVol);
         SetSfxVols();
     } else {
-        musVol += ((musicVolume * 0x7FFF) / 160 - musVol) * 0.1;
-        sfxVol += ((sfxVolume * 0x7FFF) / 160 - sfxVol) * 0.1;
+        musVol += ((curSoundMUSVol * 0x7FFF) / 160 - musVol) * 0.1;
+        sfxVol += ((curSoundFXVol * 0x7FFF) / 160 - sfxVol) * 0.1;
         MusSetMasterVolume(2, musVol);
         MusSetMasterVolume(1, sfxVol);
     }
@@ -3768,23 +3768,23 @@ void DoIntroEffects(void) {
     }
     if (frameCount > outroposplus && frameCount <= introDimEndFrame) {
         if (frameCount == introDimEndFrame) {
-            bgLighting.ambient.l.col[0] = bgLighting.ambient.l.colc[0] = originalAmbientLight[0] = 110;
-            bgLighting.ambient.l.col[1] = bgLighting.ambient.l.colc[1] = originalAmbientLight[1] = 110;
-            bgLighting.ambient.l.col[2] = bgLighting.ambient.l.colc[2] = originalAmbientLight[2] = 150;
-            for (light = bgLighting.lights.head.next, x = 0; light != &bgLighting.lights.head;
+            backgroundLightList.ambient.l.col[0] = backgroundLightList.ambient.l.colc[0] = originalAmbientLight[0] = 110;
+            backgroundLightList.ambient.l.col[1] = backgroundLightList.ambient.l.colc[1] = originalAmbientLight[1] = 110;
+            backgroundLightList.ambient.l.col[2] = backgroundLightList.ambient.l.colc[2] = originalAmbientLight[2] = 150;
+            for (light = backgroundLightList.lights.head.next, x = 0; light != &backgroundLightList.lights.head;
                  light = light->next, x++) {
                 light->col[0] = light->col[3] = 160.0f;
                 light->col[1] = light->col[4] = 160.0f;
                 light->col[2] = light->col[5] = x * 60 + 160;
             }
         } else {
-            bgLighting.ambient.l.col[0] = bgLighting.ambient.l.colc[0] = originalAmbientLight[0] =
-                bgLighting.ambient.l.col[0] * startDarkFrame;
-            bgLighting.ambient.l.col[1] = bgLighting.ambient.l.colc[1] = originalAmbientLight[1] =
-                bgLighting.ambient.l.col[1] * startDarkFrame;
-            bgLighting.ambient.l.col[2] = bgLighting.ambient.l.colc[2] = originalAmbientLight[2] =
-                bgLighting.ambient.l.col[2] * startDarkFrame;
-            for (light = bgLighting.lights.head.next; light != &bgLighting.lights.head; light = light->next) {
+            backgroundLightList.ambient.l.col[0] = backgroundLightList.ambient.l.colc[0] = originalAmbientLight[0] =
+                backgroundLightList.ambient.l.col[0] * startDarkFrame;
+            backgroundLightList.ambient.l.col[1] = backgroundLightList.ambient.l.colc[1] = originalAmbientLight[1] =
+                backgroundLightList.ambient.l.col[1] * startDarkFrame;
+            backgroundLightList.ambient.l.col[2] = backgroundLightList.ambient.l.colc[2] = originalAmbientLight[2] =
+                backgroundLightList.ambient.l.col[2] * startDarkFrame;
+            for (light = backgroundLightList.lights.head.next; light != &backgroundLightList.lights.head; light = light->next) {
                 light->col[0] = light->col[3] = light->col[0] * startDarkFrame;
                 light->col[1] = light->col[4] = light->col[1] * startDarkFrame;
                 light->col[2] = light->col[5] = light->col[2] * startDarkFrame;
