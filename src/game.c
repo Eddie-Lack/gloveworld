@@ -1263,8 +1263,8 @@ void StartNewGame(void) {
     ballLeftBehind = -1;
     numGaribs = 0;
     ZERO_VECTOR(&ballEnd);
-    saveSlot[currentSaveSlot].curSoundFXVol = curSoundFXVol;
-    saveSlot[currentSaveSlot].curSoundMUSVol = curSoundMUSVol;
+    saveSlot[currentSaveSlot].sfxVolume = curSoundFXVol;
+    saveSlot[currentSaveSlot].musicVolume = curSoundMUSVol;
     for (i = 6, p = &gameInfo.worldComplete[6]; i >= 0; i--) {
         *p-- = 0;
     }
@@ -1287,8 +1287,8 @@ void ContinueGame(void) {
     s32 i;
 
     numGaribs = 0;
-    curSoundFXVol = saveSlot[currentSaveSlot].curSoundFXVol;
-    curSoundMUSVol = saveSlot[currentSaveSlot].curSoundMUSVol;
+    curSoundFXVol = saveSlot[currentSaveSlot].sfxVolume;
+    curSoundMUSVol = saveSlot[currentSaveSlot].musicVolume;
     for (i = 1; i < 7; i++) {
         if ((saveSlot[currentSaveSlot].levels >> (i * 5 - 2)) & 1) {
             gameInfo.worldComplete[i] = 1;
