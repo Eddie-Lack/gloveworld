@@ -37,6 +37,11 @@ Several data names turned out to be placed at the wrong address (blocks in colli
 out). The front-end data (0x801E64B8 to 0x801E6790) lines up with the map at exactly -0x12A0, which the PC
 port's globals in that block confirm. Names there that had been placed 0xF0 or 0x174 out were moved to that
 alignment. So check every map-derived data name against its uses before relying on it.
+
+The map's `_objend` labels (for example `_texBank12_data_objend`) mark where each linker group ended in the map's
+build. They do not carry over. Placed by the same offsets, all 20 fell at odd addresses inside other objects in
+this ROM: in `osViModePalLan1`, in a data array, in bss buffers and in two stacks. None is near the end of a
+section. They are removed from `symbol_addrs.txt`.
 Corrections are logged in [naming.md](naming.md#globals).
 
 ## The PC port's Glover.iobj
