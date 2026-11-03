@@ -683,6 +683,8 @@ already named, or nothing shows what they do).
 | unk11 | difficultyLevel | high | 0 EASY and 1 NORMAL chosen on the SELECT DIFFICULTY screen, 2 for time trial; indexes difficultyStats[], sets maxPlasters 4/3/2 in ResetBall, TIME_TRIAL macro tests == 2 |
 | unk12 | hubTarget | medium | ++ when a world is first completed (exit type 3), set to 1 on first cave visit; DoCaveStuff walks the ball to platform unk12 while unk13 < unk12 |
 | unk13 | hubLevel | high | gameInfo.level = saveSlot.unk13 (HUB 1-8 = 0-7) in ContinueGame and on return from a world; ++ in DoCaveStuff, == 7 is the last hub |
+| unk18 | sfxVolume | high | StartNewGame stores the options screen's sound effect volume (curSoundFXVol) here, and ContinueGame restores it. The global keeps its map name |
+| unk1A | musicVolume | high | StartNewGame stores the options screen's music volume (curSoundMUSVol) here, and ContinueGame restores it. The global keeps its map name |
 
 ### ScreenDebris
 
@@ -896,9 +898,9 @@ file-scope globals. A name used by statics of two functions gets a short prefix.
 | D_801F7DCC | textItem | high | static of LevelSelectScreen: the text items of the menu |
 | D_80000430 | zbuffer | high | gDPSetDepthImage target in main.c; D_430 (its physical alias) is filled with 0xFFFCFFFC as the depth clear; 320x240x2 bytes end at 0x80025C30, just below D_80025C60 |
 | D_80025C60 | rdp_output | high | RDP output buffer: task output_buff, output_buff_size = &D_80025C60[rdp_output_size] (0x1000 u64); sits beside rdp_output_size/rdp_output_len |
-| D_8002DC90 | audio_memory | high | linker map name (same fixed address in every build); musicPlayer.heap with heap_length 0x493E0, which ends exactly at D_80077070 |
+| D_8002DC90 | audio_memory | high | linker map name (at the same address in the map and in the USA ROM); musicPlayer.heap with heap_length 0x493E0, which ends exactly at D_80077070 |
 | D_80077070 | pbankBuffer | medium | audioCtrl.base: pbank1 is DMAed here and pbank2 follows it (audioCtrl.ptr = base + pbank1 size) |
-| D_800DD030 | sysfont | high | linker map name (same fixed address in every build); fixed RAM buffer LoadTextureBank(10) DMAs FONT_TEX_BANK into instead of JallocAlloc; follows the second framebuffer (D_800B7830+0x25800) |
+| D_800DD030 | sysfont | high | linker map name (at the same address in the map and in the USA ROM); fixed RAM buffer LoadTextureBank(10) DMAs FONT_TEX_BANK into instead of JallocAlloc; follows the second framebuffer (D_800B7830+0x25800) |
 | D_8011C720 | rspbootTextStart | high | ucode_boot of the gfx task; the splat textbin segment of that name at ROM 0x1D720 (libultra ucode.h name) |
 | D_801BC710 | gspF3DEX_fifoTextStart | high | ucode text of UseUCode 4, paired with gspF3DEX_fifoDataStart; splat textbin segment of that name at ROM 0xBD710 |
 | D_801BDB40 | gspSprite2DTextStart | high | ucode text swapped in when flag is set, paired with D_801F2E40; splat textbin segment at ROM 0xBEB40 |
@@ -1183,8 +1185,8 @@ ScreenFadedIn reads `gameInfo.fade` and `fade2` as one 32-bit word. It keeps `D_
 `D_80284D74` (`matrixStack.result`). Its matrix prototypes use `f32[4][4]`, not maths.h's `Matrix`.
 | Old | New | Confidence | Evidence |
 | --- | --- | --- | --- |
-| D_80092030 | cfb_16_a | high | linker map name (same fixed address in every build); assigned to cfb_ptrs[0] in main.c and cleared with memset 0x25800, one 320x240 16 bit buffer |
-| D_800B7830 | cfb_16_b | high | linker map name (same fixed address in every build); assigned to cfb_ptrs[1] in main.c, directly after cfb_16_a |
+| D_80092030 | cfb_16_a | high | linker map name (at the same address in the map and in the USA ROM); assigned to cfb_ptrs[0] in main.c and cleared with memset 0x25800, one 320x240 16 bit buffer |
+| D_800B7830 | cfb_16_b | high | linker map name (at the same address in the map and in the USA ROM); assigned to cfb_ptrs[1] in main.c, directly after cfb_16_a |
 | D_801E6630 | aimArLScale | medium | map name at the -0x12A0 front-end alignment; target scale of arrOL[0] (right arrow) in HiscoresRun, 1024 or 600 when pressed |
 | D_801E6634 | aimArRScale | medium | map name at the -0x12A0 front-end alignment; target scale of arrOL[1] (left arrow) in HiscoresRun |
 | D_801E6638 | bgScale | medium | map name at the -0x12A0 front-end alignment; current scale of the two title box foreground objects in HiscoresRun, eases toward the aim |

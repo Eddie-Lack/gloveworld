@@ -21,8 +21,8 @@ messages (`"ACOSBETTER"`), file names in level data, and the credits text.
 Static functions and locals are not in it. It comes from a **different build** of the game: its text is 0xFB0
 bytes larger, and its offset from the ROM drifts from -0x2F0 to -0x12A4.
 
-The map is from a PAL build. The final European ROM (NGVP, English, French and German) is the nearest known
-build. Its code is only 0x2C0 bytes smaller than the map's, and the offset between them changes at about 13
+The map is from a PAL build. The owner believes it was made a little after the European release. The final
+European ROM (NGVP, English, French and German) is the nearest known build. Its code is only 0x2C0 bytes smaller than the map's, and the offset between them changes at about 13
 places. The map has three functions that the USA ROM lacks (`FreeTitleScreen`, `CheckFrontProbe`, `ZCarBodge`).
 The first pass gave the map's `NewWorldScreen` name to the function after it. That function is the map's
 `ErrorScreen`, and both now have their map names.
