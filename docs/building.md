@@ -121,6 +121,10 @@ them, and the display list macros must expand to the same code as in the origina
 
 - `symbol_addrs.txt` holds every name splat uses, with `type:` and `size:` where needed. Rename a global or a
   function with `tools/session/gname.py`, then run `make setup`.
+- splat writes a named word as a string when its bytes look like text. `zoomBodgeAmount` (0.5, 0x3F000000) and
+  `tongueRange` (10.0, 0x41200000) came out as `.asciz`, so they have `type:f32`. weemitt's `make gen` takes byte
+  swaps from these files and would leave such a word unswapped. `nmeFade` (0x0A000000) is still a string: its
+  type is unknown.
 - `symbols.ld` defines absolute symbols that splat cannot express: two odd instructions (`j 0x880332A0` at
   0x8011282C and a junk `bltz $zero` at 0x80132934) and symbols that share an address with another name
   (splat allows one name per address, but InitMusicDriver passes the end of one bank and the start of the next
