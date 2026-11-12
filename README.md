@@ -1,26 +1,54 @@
 # gloveworld
 
-A still in progress decompilation of Glover for the Nintendo 64 (North America, NGVE)
+A decompilation of Glover for the Nintendo 64 (North America, NGVE)
 
-Technically 100% matching! The C code compiles to the exact bytes of the game's ROM. 
+100% matching! The C code compiles to the exact bytes of the game's ROM.
 
-Very much a work in progress though :)
+The clean-up of names, types and code style is still in progress :)
 
 You need your own copy of the ROM!! It isn't in this repository!
 
 ![Code](https://img.shields.io/badge/Code-100.00%25-2fcc3b?style=flat) ![Functions](https://img.shields.io/badge/Functions-100.00%25-2fcc3b?style=flat)
 
-## Where it stands
+## What's done
 
-- All 853 game functions are C, and each one matches the ROM
-- The only assembly left in `src/` is 42 blocks of linker padding (they aren't functions)
-- `make` compares the built ROM with the original's SHA-1 hash
-- Most structs, globals and functions have names, with the evidence for each in _[docs/naming.md](docs/naming.md)_
-- What's left is making the C read like the original team's code: clearer names, real types, natural constructs
-- Every rewrite must still match the ROM
-- _[docs/status.md](docs/status.md)_ lists what's done and what's left
-- Only game code is in scope
-- libultra (Nintendo's N64 library), libmus (the sound driver), SN's host I/O library, the C library and libgcc stay as assembly
+The matching stage is finished. The clean-up stage is mostly finished.
+
+| Area | State |
+| --- | --- |
+| Matching | All 853 game functions are C, and each one matches the ROM |
+| Assembly in `src/` | Only 42 blocks of linker padding (they aren't functions) |
+| Build check | `make` compares the built ROM with the original's SHA-1 hash |
+| Globals | Every data global has a name |
+| Functions | Every function has a name, except one that nothing calls |
+| Struct fields | Every field the code uses has a name, except five |
+| Locals and parameters | No decompiler temporaries are left; 1,169 locals and 894 of 934 parameters have the original names from the PC port |
+| Enums | The PC port's enum names replace raw numbers for hand modes, levels and actor types |
+| Headers | Each source file that other files call has a header in `include/` |
+
+The evidence for each name is in _[docs/naming.md](docs/naming.md)_
+
+## What's left
+
+What's left is making the C read like the original team's code. Every rewrite must still match the ROM.
+
+- **Placeholder names with no evidence:** five struct fields (`unkNN`), one function (`func_8011C7F0`) and one parameter (`arg3`). The game never uses these values in a way that shows what they mean
+- **Constructs that exist only for the compiler:** about 80 commented places in `src/` where the C has an unnatural form because GCC needs it to produce the ROM's code. The original form of each is unknown
+- **Stack padding:** six functions have an unused local that only reserves stack space
+- **Locals that differ from the PC port:** some functions have one local where the original had two, or two where it had one. Every form tried so far changed the code
+- **About 300 local prototypes** that could not move into headers
+- **A licence** for the project's own code is not chosen yet
+
+_[docs/status.md](docs/status.md)_ has the full lists and the open questions
+
+## What's out of scope
+
+Only game code is decompiled. These libraries stay as assembly:
+
+- libultra (Nintendo's N64 library)
+- libmus (the sound driver)
+- SN's host I/O library
+- the C library and libgcc
 
 ## Thanks
 
