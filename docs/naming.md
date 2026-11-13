@@ -346,7 +346,7 @@ already named, or nothing shows what they do).
 | unk18 | scaleX | high | PrintSprite multiplies it by 33 for the horizontal size; interpolated from SpriteAnim start/end scale. |
 | unk1A | scaleY | high | PrintSprite vertical size, same as unk18. |
 | unk20 | alpha | high | Passed as alpha to gDPSetPrimColor with r, g, b in PrintSprite. |
-| unk1C | sameSpriteTex | low | Never set. SubSprite clears the next sprite's value when the removed sprite's value is 0, and AddSprite clears the new sprite's. A flag that says "this sprite has the texture of the sprite before it" needs exactly this rule: when a sprite that loads its texture leaves, the next one must load it. TileRectangle makes that test with the global `lastSpriteTex` instead. In the demo runs most neighbours in the list share a texture (`tools/emu/poke.py --rule`). The name follows `lastSpriteTex` |
+| unk1C | sameSpriteTex | low | Never set. SubSprite clears the next sprite's value when the removed sprite's value is 0, and AddSprite clears the new sprite's. A flag that says "this sprite has the texture of the sprite before it" needs exactly this rule: when a sprite that loads its texture leaves, the next one must load it. TileRectangle makes that test with the global `lastSpriteTex` instead. In the demo runs 39% of neighbours in the list share a texture, and the game never sets the value (`tools/emu/poke.py --rule`). The name follows `lastSpriteTex` |
 | unk21 | flags | high | Bit 1 translucent (draw in the second pass, list order), 2 flip x, 4 flip y, 0x10 animation running backwards (TileRectangle, AddSprite, AnimateSprite). |
 
 ### Garib

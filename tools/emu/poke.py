@@ -18,16 +18,23 @@ Each level runs twice from the title menu state (`build/out/menu.st`), with the 
 
 On every game frame (each change of `frameCount`, and every fifth video frame of the end-of-level screen) both
 runs take a CRC of the game's logic state (`LOGIC`: the hand, the ball, the camera, handControl, the lists' heads,
-gameInfo, the random seeds, and every sprite and backdrop in the lists). The poke run first sets its markers back
+gameInfo and the random seeds) and a second CRC of every sprite and backdrop in the lists. The poke run first sets its markers back
 to 0, and writes them again after the CRC. Both runs also save the RAM at a few game frames (`DUMP_FRAMES`) and a
 screenshot with it. A CRC of all RAM is no use: two untouched runs differ in the audio and thread memory.
 
-The result per level: the number of game frames compared, whether the logic state and the screenshots (compared
-byte for byte) are the same, and for each saved RAM pair the differing bytes grouped by symbol (from
-`build/NGVE.map`), for a closer look. Two runs of the emulator can differ by themselves in a frame or a
-screenshot (the picture of the end-of-level screen often does, by a few pixel values). When the poke run differs
-from the base run, the script therefore makes a second base run. A frame counts when the poke run differs from
-both, and a screenshot counts when the two base runs agree. `--base-twice` runs base against base.
+The result per level: the number of game frames compared, whether the logic state, the sprites and backdrops, and
+the screenshots (compared byte for byte) are the same, and for each saved RAM pair the differing bytes grouped by
+symbol (from `build/NGVE.map`), for a closer look. The CRC of the lists is kept apart from the CRC of the logic
+state: AnimateSprite runs once per drawn picture, not once per game frame, so a sprite's animation step depends on
+the emulator's timing.
+
+Two runs of the emulator can differ by themselves in a frame or a screenshot (the picture of the end-of-level
+screen often does, by a few pixel values). When the poke run differs from the base run, the script therefore
+makes a second base run. A frame counts when the poke run differs from both in that frame and in the next one,
+and a screenshot counts when the two base runs agree. When the two base runs differ in more than 20 frames, the
+level gives no result: ATLANTIS3A (level 12) takes one of several courses from about frame 10 on, with or without
+markers. `--base-twice` runs base against base. POKE_SHAM=1 writes zeros in place of the markers (the same work
+for the emulator's host), and POKE_DUMP sets the game frames to save.
 
 Logs, dumps and screenshots go to OUT (default `tools/emu/build/out/`, untracked): `pokeNN-base.*`, `pokeNN-poke.*`.
 `--rule` is a separate run that watches what the game itself does with GameSprite.unk1C. Every 60 game frames it
@@ -55,7 +62,7 @@ sys.path.insert(0, HERE)
 import demoplay as D
 
 ALL = ('sprite', 'backdrop', 'bank', 'eol', 'arg3')
-DUMP_FRAMES = (40, 120, 250)
+DUMP_FRAMES = tuple(int(x) for x in os.environ.get('POKE_DUMP', '40,120,250').split(','))
 DUMP_EOL = (300, 900)  # video frames into the end-of-level screen
 ARG3_INSN = 0x80143A6C  # DrawActor: `move a3, zero` in the delay slot of the call
 ADD_STORE = 0x8014ACA8  # AddSprite: `sb zero, 0x1C(a0)`
@@ -90,17 +97,18 @@ LOGIC = ((0x80289000, 0x80291000), (0x8029F978, 0x8029FB78), (D.EOLITEMS, D.EOLI
 
 
 def logic_crc(emu, data):
-    """A CRC of the logic state and of every sprite and backdrop in the lists. `data` is the RAM as the core stores
-    it (host-endian words), which is the same in both runs."""
+    """Two CRCs: of the logic state, and of every sprite and backdrop in the lists. `data` is the RAM as the core
+    stores it (host-endian words), which is the same in both runs."""
     crc = 0
     for a, b in LOGIC:
         crc = zlib.crc32(data[a & 0x7FFFFF:b & 0x7FFFFF], crc)
+    lists = 0
     for head, size in ((D.SPRITES, 0x38), (D.BACKDROPS, 0x70)):
         p, n = emu.r32(head), 0
         while p != head and n < 400 and 0x80000000 <= p < 0x80800000:
-            crc = zlib.crc32(data[p & 0x7FFFFF:(p & 0x7FFFFF) + size], crc)
+            lists = zlib.crc32(data[p & 0x7FFFFF:(p & 0x7FFFFF) + size], lists)
             p, n = emu.r32(p), n + 1
-    return crc
+    return crc, lists
 
 
 MARK = {'sprite': b'\x01', 'backdrop': b'\x12\x34', 'bank': b'\x12\x34\x56\x78', 'eol': b'\x42\xf6\x00\x00'}
@@ -113,6 +121,10 @@ def run(emu):
     maxf = int(os.environ.get('POKE_MAX', '6000'))
     only = os.environ.get('POKE_ONLY', ','.join(ALL)).split(',')
     log = open(prefix + '.log', 'w', buffering=1)
+    if os.environ.get('POKE_SHAM') == '1':
+        # the same work on the host, but the value written is the 0 that is already there
+        for k in MARK:
+            MARK[k] = bytes(len(MARK[k]))
     emu.cheat('eolexit', [(0x8013587F, 1)])
     emu.cheat('demolevel', [(0x8011468B, level)])
     if poke and 'arg3' in only:
@@ -131,7 +143,7 @@ def run(emu):
         for a, n, k in t:
             emu._put(a, bytes(n))
         data = ram()
-        log.write(f'{tag} vi={emu.frame} crc={logic_crc(emu, data):08x}\n')
+        log.write(f'{tag} vi={emu.frame} crc=%08x lists=%08x\n' % logic_crc(emu, data))
         nframes += 1
         if dump and tag not in dumped:
             dumped.add(tag)
@@ -245,7 +257,7 @@ def symbols():
 
 def crcs(prefix):
     lines = [l.split() for l in open(prefix + '.log').read().splitlines()]
-    return [(l[0], l[2]) for l in lines if len(l) == 3 and l[2].startswith('crc=')], ' '.join(lines[-1])
+    return [(l[0], l[2], l[3]) for l in lines if len(l) == 4 and l[2].startswith('crc=')], ' '.join(lines[-1])
 
 
 def compare(prefix_base, prefix_poke, syms, rerun):
@@ -257,20 +269,28 @@ def compare(prefix_base, prefix_poke, syms, rerun):
     png = lambda p, t: open(f'{p}.{t}.png', 'rb').read()
     diff = [x[0] for x, y in zip(fa, fb) if x != y]
     shots = [t for t in tags if png(prefix_base, t) != png(prefix_poke, t)]
-    note = ''
+    logic, lists, note = [], [], ''
     if diff or shots or len(fa) != len(fb):
         base2 = rerun()
         fc, _ = crcs(base2)
-        noise = [x[0] for x, y in zip(fa, fc) if x != y]
-        real = [x[0] for x, y, z in zip(fa, fb, fc) if y != x and y != z]
+
+        def lasting(k):
+            """Frames in which field k of the poke run differs from both base runs, and in the next frame too. One
+            sample can fall inside an update, also between two base runs."""
+            bad = [y[k] != x[k] and y[k] != z[k] for x, y, z in zip(fa, fb, fc)]
+            return [fa[i][0] for i in range(len(bad) - 1) if bad[i] and bad[i + 1]]
+        logic, lists = lasting(1), lasting(2)
         # a screenshot counts only where the two base runs give the same picture
         steady = [t for t in shots if os.path.exists(f'{base2}.{t}.png') and png(base2, t) == png(prefix_base, t)]
-        note = (f'; the first base run differs in {len(diff)} frames and {len(shots)} screenshots, a second base run differs from '
-                f'the first in {len(noise)} frames and {len(shots) - len(steady)} of those screenshots')
-        shots2 = steady
-        diff, shots = real, shots2
+        note = (f'; the two base runs differ from each other in {sum(x[1] != y[1] for x, y in zip(fa, fc))} frames (logic), '
+                f'{sum(x[2] != y[2] for x, y in zip(fa, fc))} frames (lists) and {len(shots) - len(steady)} of {len(shots)} screenshots')
+        shots = steady
+        if sum(x[1] != y[1] for x, y in zip(fa, fc)) > 20:
+            note += '; THE BASE RUNS DO NOT REPEAT, so this level gives no result'
+            logic, lists = [], []
     print(f'  game frames compared: {min(len(fa), len(fb))} (base {len(fa)}, poke {len(fb)}); '
-          f'logic state: {"DIFFERS at " + diff[0] if diff else "same in every frame"}; '
+          f'logic state: {"DIFFERS in %d frames, first %s" % (len(logic), logic[0]) if logic else "same"}; '
+          f'sprites and backdrops: {"differ in %d frames, first %s" % (len(lists), lists[0]) if lists else "same"}; '
           f'screenshots: {"DIFFER " + str(shots) if shots else "same"}{note}')
     print('  ' + end)
     addrs = [s[0] for s in syms]

@@ -59,14 +59,18 @@ What was run in the emulator for these six values:
   PRESENT (the demo ends in the menu).
 - **Poking.** `tools/emu/poke.py` plays a level's demo twice: once untouched, and once with a marker written into
   every instance of the five values that levels have, on every video frame (`arg3` through a code cheat).
-  In the levels run so far the game's logic state (hand, ball, camera, random seeds, sprite and backdrop lists)
-  was the same on every game frame, and the pictures were the same.
+  Over all 44 levels that is 40,691 game frames and about 2.6 million marker writes. In 43 levels the game's
+  logic state (hand, ball, camera, handControl, random seeds), the sprites and backdrops and the pictures were the
+  same. Three of them had one or two single frames that differed, as two untouched runs of the same level also
+  have. ATLANTIS3A gives no result: its untouched runs take one of several courses from about frame 10 on. A read
+  watch on the sprite byte in that level, over 26 game frames, saw no reader but SubSprite.
   `catapult.py --poke` does the same for `unk16` through a full catapult cycle: every other catapult field and the
   hand's contact point and state were the same in all 325 logged game frames.
 - **SubSprite's rule.** `poke.py --rule` sets `sameSpriteTex` to 1 in every sprite once every 60 game frames and
   follows each sprite with breakpoints on the two stores.
-  In CAVE no sprite ever got a value other than 0 from the game, and every sprite that lost its 1 had passed
-  through AddSprite. 84% of neighbours in the sprite list had the same texture.
+  Over all 44 levels the game never gave a sprite a value other than 0. 62,958 sprites entered the list, all with
+  0. Of the 2,050 sprites that lost their 1 while in the list, 2,048 had passed through AddSprite again and 2 were
+  cleared by SubSprite's rule. 39% of neighbours in the sprite list had the same texture.
 
 Other sources checked, with no result:
 
