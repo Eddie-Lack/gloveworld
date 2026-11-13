@@ -62,8 +62,11 @@ What was run in the emulator for these six values:
   Over all 44 levels that is 40,691 game frames and about 2.6 million marker writes. In 43 levels the game's
   logic state (hand, ball, camera, handControl, random seeds), the sprites and backdrops and the pictures were the
   same. Three of them had one or two single frames that differed, as two untouched runs of the same level also
-  have. ATLANTIS3A gives no result: its untouched runs take one of several courses from about frame 10 on. A read
-  watch on the sprite byte in that level, over 26 game frames, saw no reader but SubSprite.
+  have. ATLANTIS3A is the exception: its untouched runs take one of two courses from
+  about frame 10 on, and runs with the sprite marker took other courses. A read watch on the sprite byte in that
+  level, over 26 game frames, saw no reader but SubSprite, which skips one store when the value is not 0. With
+  that branch replaced by a `nop` (`POKE_NOBRANCH=1`), three runs with the sprite marker were the same as an
+  untouched run in all 603 game frames. The marker changes only how long SubSprite takes.
   `catapult.py --poke` does the same for `unk16` through a full catapult cycle: every other catapult field and the
   hand's contact point and state were the same in all 325 logged game frames.
 - **SubSprite's rule.** `poke.py --rule` sets `sameSpriteTex` to 1 in every sprite once every 60 game frames and

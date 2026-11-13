@@ -33,7 +33,8 @@ screen often does, by a few pixel values). When the poke run differs from the ba
 makes a second base run. A frame counts when the poke run differs from both in that frame and in the next one,
 and a screenshot counts when the two base runs agree. When the two base runs differ in more than 20 frames, the
 level gives no result: ATLANTIS3A (level 12) takes one of several courses from about frame 10 on, with or without
-markers. `--base-twice` runs base against base. POKE_SHAM=1 writes zeros in place of the markers (the same work
+markers. The sprite marker alone moves it to other courses, because SubSprite skips one store when the value is
+not 0; POKE_NOBRANCH=1 replaces that branch with a `nop`, and the marker then has no effect. `--base-twice` runs base against base. POKE_SHAM=1 writes zeros in place of the markers (the same work
 for the emulator's host), and POKE_DUMP sets the game frames to save.
 
 Logs, dumps and screenshots go to OUT (default `tools/emu/build/out/`, untracked): `pokeNN-base.*`, `pokeNN-poke.*`.
@@ -66,6 +67,7 @@ DUMP_FRAMES = tuple(int(x) for x in os.environ.get('POKE_DUMP', '40,120,250').sp
 DUMP_EOL = (300, 900)  # video frames into the end-of-level screen
 ARG3_INSN = 0x80143A6C  # DrawActor: `move a3, zero` in the delay slot of the call
 ADD_STORE = 0x8014ACA8  # AddSprite: `sb zero, 0x1C(a0)`
+SUB_BRANCH = 0x8014ACDC  # SubSprite: `bnez v0`, taken when sprite->sameSpriteTex is not 0
 SUB_STORE = 0x8014ACE8  # SubSprite: `sb zero, 0x1C(v0)`, v0 = sprite->next; skipped when sprite->unk1C is not 0
 
 
@@ -130,6 +132,9 @@ def run(emu):
     if poke and 'arg3' in only:
         # addiu a3, zero, 0x1234
         emu.cheat('arg3', [(0x81000000 | (ARG3_INSN & 0xFFFFFF), 0x2407), (0x81000000 | ((ARG3_INSN + 2) & 0xFFFFFF), 0x1234)])
+    if os.environ.get('POKE_NOBRANCH') == '1':
+        # SubSprite: replace `bnez v0` (skip the store when sprite->sameSpriteTex is not 0) with a nop
+        emu.cheat('nobranch', [(0x81000000 | (SUB_BRANCH & 0xFFFFFF), 0), (0x81000000 | ((SUB_BRANCH + 2) & 0xFFFFFF), 0)])
     yield 30
     emu.w8(D.DEMOLEVEL, 0)
     emu.w32(D.DEMOTIMER, 3)
