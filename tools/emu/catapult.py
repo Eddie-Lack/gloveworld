@@ -18,7 +18,9 @@ for token TOKEN_CATAPULT in `src/parse.c`). The level starts through the title's
 The game's own CheckHandCatapult then catches the hand, winds up and launches. The script logs every
 PlatformCatapult field and the hand state each game frame in which any of them changed, to OUT/catapult.log
 (default tools/emu/build/out/, untracked). The run ends 60 game frames after the launch timer returns to 0.
-Environment: CAT_LEVEL, CAT_LOG, CAT_MAX.
+`--poke` runs the level a second time and writes 0x7777 into `unk16` on every video frame from the conversion on.
+It then compares the two logs (every other catapult field, the hand's contact point and state, each game frame).
+Environment: CAT_LEVEL, CAT_LOG, CAT_MAX, CAT_POKE.
 """
 import os, struct, subprocess, sys
 
@@ -45,6 +47,7 @@ def run(emu):
     level = int(os.environ.get('CAT_LEVEL', '1'))
     log = open(os.environ.get('CAT_LOG', os.path.join(HERE, 'build', 'out', 'catapult.log')), 'w', buffering=1)
     maxf = int(os.environ.get('CAT_MAX', '3000'))
+    poke = os.environ.get('CAT_POKE') == '1'
     emu.cheat('demolevel', [(0x8011468B, level)])
     yield 30
     emu.w8(D.DEMOLEVEL, 0)
@@ -59,6 +62,8 @@ def run(emu):
                 log.write('NOSTART\n'); break
             if not started:
                 continue
+        if poke and plat:
+            emu.w16(CAT + 0x16, 0x7777)
         if fc == last:
             continue
         last = fc
@@ -91,6 +96,9 @@ def run(emu):
                 log.write(f'frame={fc} CONVERT platform={p:08X} contact=({cx:g},{cy:g},{cz:g}) platPos=({px:g},{py:g},{pz:g})\n')
             continue
         s = fields(emu, CAT)
+        if poke:
+            del s['unk16']
+        s['handContact'] = '%g,%g,%g' % tuple(emu.rf(obj + 0x10 + 4 * i) for i in range(3))
         s['handmode'] = emu.r16(state + 4)
         s['handCatapult'] = '%08X' % emu.r32(D.HANDCONTROL + 0x4C0)
         s['noControl'] = emu.r16(D.HANDCONTROL + 0x8)
@@ -116,13 +124,21 @@ def main():
     ap.add_argument('--gfx', default='rice')
     ap.add_argument('--max-frames', type=int, default=3000)
     ap.add_argument('--out', default=os.path.join(HERE, 'build', 'out'))
+    ap.add_argument('--poke', action='store_true', help='run again with unk16 = 0x7777 written on every video frame, and compare')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
-    env = dict(os.environ, CAT_LEVEL=str(a.level), CAT_MAX=str(a.max_frames), CAT_LOG=os.path.join(a.out, 'catapult.log'))
-    subprocess.run([sys.executable, os.path.join(HERE, 'emu.py'), os.path.abspath(__file__), '--state',
-                    os.path.join(HERE, 'build', 'out', 'menu.st'), '--gfx', a.gfx, '--out', a.out], env=env, check=False,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    print(open(env['CAT_LOG']).read())
+    logs = []
+    for name, poke in (('catapult', '0'), ('catapult-poke', '1'))[:2 if a.poke else 1]:
+        env = dict(os.environ, CAT_LEVEL=str(a.level), CAT_MAX=str(a.max_frames), CAT_LOG=os.path.join(a.out, name + '.log'), CAT_POKE=poke)
+        subprocess.run([sys.executable, os.path.join(HERE, 'emu.py'), os.path.abspath(__file__), '--state',
+                        os.path.join(HERE, 'build', 'out', 'menu.st'), '--gfx', a.gfx, '--out', a.out], env=env, check=False,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        logs.append(open(env['CAT_LOG']).read())
+    print(logs[0])
+    if a.poke:
+        strip = lambda t: [' '.join(w for w in l.split() if not w.startswith('unk16=')) for l in t.splitlines()]
+        x, y = [l for l in strip(logs[0]) if ' ' in l], [l for l in strip(logs[1]) if ' ' in l]
+        print(f'with unk16 = 0x7777 on every video frame: {len(y)} log lines, ' + ('the same as without' if x == y else 'DIFFERENT'))
 
 
 if __name__ == '__main__':

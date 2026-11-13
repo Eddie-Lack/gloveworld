@@ -19,6 +19,13 @@ field does at run time, which helps when naming it.
 - `catapult.py [LEVEL]` builds a catapult platform in memory under Glover (no shipped level has one), lets the game's
   own `CheckHandCatapult` run it through a full cycle and logs every `PlatformCatapult` field each game frame to
   `build/out/catapult.log` (see its docstring).
+  `--poke` runs it again with a marker written into `unk16` on every video frame and compares the two logs.
+- `poke.py LEVEL...` tests whether a placeholder field has any effect. It plays each level's demo twice, once
+  untouched and once with marker values written into every placeholder on every video frame, and compares the
+  game's logic state on every game frame, saved RAM and screenshots. `--rule` instead watches, with breakpoints,
+  what AddSprite and SubSprite do to `GameSprite.sameSpriteTex` (see its docstring).
+- `mkmenu.py` (run through `emu.py`) boots the game and saves the title menu state `build/out/menu.st`, which
+  `demoplay.py`, `catapult.py` and `poke.py` start from.
 - `structwatch.py` samples a struct every frame through named phases (for example idle, walk, jump) and lists
   which fields change in which phase. It reads field offsets and types from our headers.
 

@@ -5,8 +5,9 @@ placeholder (`unkNN`, `D_XXXXXXXX`, `func_XXXXXXXX`, `argN`). Add to it whenever
 rules for choosing names are in [conventions.md](conventions.md#names), and the evidence sources are described
 in [sources.md](sources.md).
 
-Confidence is **high** when the code and the game's behaviour make the meaning clear, and **medium** when the
-evidence is strong but not complete. Names without evidence are not given: a placeholder is better than a
+Confidence is **high** when the code and the game's behaviour make the meaning clear, **medium** when the
+evidence is strong but not complete, and **low** when the game never uses the value and only the code around it
+suggests the meaning. Names without evidence are not given: a placeholder is better than a
 guess.
 
 ## Struct fields
@@ -300,6 +301,12 @@ already named, or nothing shows what they do).
 | --- | --- | --- | --- |
 | unk4080 | cameraView | high | guLookAt(Hilite) from the camera position in SetupViewing, multiplied into the projection (also used by the sprite and backdrop code); viewing is the origin one used by ClearViewing. |
 
+### EolItem
+
+| Old | New | Confidence | Evidence |
+| --- | --- | --- | --- |
+| unk0C | velY | low | Never read. It follows `x`, `y` and `vel`, and EndOfLevelScreen clears it together with `vel`. The items only move along x, with `vel`. ScreenDebris in the same code has a `velX`, `velY` pair |
+
 ### Footprint
 
 | Old | New | Confidence | Evidence |
@@ -339,6 +346,7 @@ already named, or nothing shows what they do).
 | unk18 | scaleX | high | PrintSprite multiplies it by 33 for the horizontal size; interpolated from SpriteAnim start/end scale. |
 | unk1A | scaleY | high | PrintSprite vertical size, same as unk18. |
 | unk20 | alpha | high | Passed as alpha to gDPSetPrimColor with r, g, b in PrintSprite. |
+| unk1C | sameSpriteTex | low | Never set. SubSprite clears the next sprite's value when the removed sprite's value is 0, and AddSprite clears the new sprite's. A flag that says "this sprite has the texture of the sprite before it" needs exactly this rule: when a sprite that loads its texture leaves, the next one must load it. TileRectangle makes that test with the global `lastSpriteTex` instead. In the demo runs most neighbours in the list share a texture (`tools/emu/poke.py --rule`). The name follows `lastSpriteTex` |
 | unk21 | flags | high | Bit 1 translucent (draw in the second pass, list order), 2 flip x, 4 flip y, 0x10 animation running backwards (TileRectangle, AddSprite, AnimateSprite). |
 
 ### Garib

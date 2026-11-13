@@ -298,7 +298,7 @@ void AddSprite(GameSprite *sprite, GameSprite *after) {
         after->next->prev = sprite;
         after->next = sprite;
         spriteList.count++;
-        sprite->unk1C = 0;
+        sprite->sameSpriteTex = 0;
     }
 }
 
@@ -307,8 +307,8 @@ void SubSprite(GameSprite *sprite) {
         sprite->anim.def.type = 0;
         sprite->prev->next = sprite->next;
         sprite->next->prev = sprite->prev;
-        if (sprite->unk1C == 0) {
-            sprite->next->unk1C = 0;
+        if (sprite->sameSpriteTex == 0) {
+            sprite->next->sameSpriteTex = 0;
         }
         sprite->next = NULL;
         spriteList.count--;

@@ -41,7 +41,7 @@ typedef struct GameSprite {
     /* 0x0C */ Vec3 pos;
     /* 0x18 */ s16 scaleX;
     /* 0x1A */ s16 scaleY;
-    /* 0x1C */ u8 unk1C;
+    /* 0x1C */ u8 sameSpriteTex;
     /* 0x1D */ u8 r;
     /* 0x1E */ u8 g;
     /* 0x1F */ u8 b;

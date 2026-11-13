@@ -226,7 +226,7 @@ typedef struct EolItem {
     /* 0x00 */ f32 x;
     /* 0x04 */ f32 y;
     /* 0x08 */ f32 vel;
-    /* 0x0C */ f32 unk0C;
+    /* 0x0C */ f32 velY;
     /* 0x10 */ f32 target;
     /* 0x14 */ Overlay *ol;
     /* 0x18 */ s16 delay;
@@ -1624,7 +1624,7 @@ void EndOfLevelScreen(void) {
         bestPicOL.frames = (SpriteFrames *)&spriteFrameList[EOL_BEST_TIME_ANIM];
         for (i = 0; i < 7; i++) {
             eolItems[i].vel = 0;
-            eolItems[i].unk0C = 0;
+            eolItems[i].velY = 0;
             eolItems[i].active = 1;
         }
         initFGObject("titleboxb.ndo", -110.0f, 150.0f, 500.0f, 0.0f, 1.5f, 0.0f, 1.4f, 1.4f, 1.4f, 255);
