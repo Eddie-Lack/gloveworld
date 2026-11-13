@@ -32,7 +32,7 @@ The evidence for each name is in _[docs/naming.md](docs/naming.md)_
 
 What's left is making the C read like the original team's code. Every rewrite must still match the ROM.
 
-- **Placeholder names with no evidence:** five struct fields (`unkNN`), one function (`func_8011C7F0`) and one parameter (`arg3`). The game never uses these values in a way that shows what they mean
+- **Placeholder names with no evidence:** five struct fields (`unkNN`) and one parameter (`arg3`). The game never uses these values in a way that shows what they mean
 - **Constructs that exist only for the compiler:** about 80 commented places in `src/` where the C has an unnatural form because GCC needs it to produce the ROM's code. The original form of each is unknown
 - **Stack padding:** six functions have an unused local that only reserves stack space
 - **Locals that differ from the PC port:** some functions have one local where the original had two, or two where it had one. Every form tried so far changed the code

@@ -6,7 +6,7 @@ of work. Counts can be recomputed with the commands given.
 ## Done
 
 - **Matching.** All 853 game functions are C, and the ROM matches byte for byte at every commit.
-- **Names.** About 427 struct fields, 531 globals and 45 functions have names, with the evidence in
+- **Names.** About 427 struct fields, 531 globals and 46 functions have names, with the evidence in
   [naming.md](naming.md). The original enums from the PC port are in `include/enums.h` and used in the code.
 - **Types.** Stand-in structs that described only a few bytes were replaced by the real types.
 - **Locals and parameters.** 600 matched functions have a local list in the PC port. In 325 of them, every
@@ -47,16 +47,30 @@ frame), show only constant values for most of them:
   Recount with `xref.py` (it writes `.session/xref.json`).
 - **No data global** is left. Two `D_` names are deliberate (see [naming.md](naming.md#globals)), and the other 37 are
   strings, constants and linker padding, which need no other name.
-- **`func_8011C7F0`** only calls FreeBackdropList and has no callers. Its address is also the end of the
-  `rspboot` microcode, which the audio library reads as `rspbootTextEnd`. The PC port has no counterpart. With
-  the first instruction replaced by a branch to itself, three levels with their end-of-level screens and the
-  present screen never hung. A debugger breakpoint on it was never reached either (title screen, three levels).
 - **1 `argN` parameter:** TransformAndDrawObject's `arg3` is only passed on to the recursive calls, and the
   one outside call passes the constant 0. A debugger breakpoint on the function saw `arg3` = 0 in all 65,524,
   87,624 and 26,884 calls of three level runs.
 
 Four levels have no end-of-level screen in the runs: HUB1 (its recording is empty, so the demo
 never ends), and SPACEBOSS_TWEEN, WAYROOM and PRESENT (the demo ends in the menu).
+
+No `func_` name is left.
+
+Other sources checked for these six, with no result:
+
+- The PAL ROM (NGVP) has the same instructions as the USA ROM in AddSprite, SubSprite, FindObject,
+  EndOfLevelScreen, ParseTokenGeneric and TransformAndDrawObject, and around the `unk16` store in
+  CheckHandCatapult.
+- The PC port's lists give TransformAndDrawObject three parameters and FindObject no locals.
+  They name the struct types but not their members.
+
+Two observations that are not enough for a name:
+
+- `GameSprite.unk1C` describes a sprite in relation to the sprite before it: SubSprite clears the next sprite's
+  value when the removed sprite's value is 0. A "same texture as the previous sprite" flag would need this rule,
+  and TileRectangle skips the texture load with the global `lastSpriteTex` instead.
+- `EolItem.unk0C` follows `x`, `y` and `vel`, and is cleared together with `vel`. Only `x` moves. It may have been
+  a second velocity.
 
 Find them with `grep -nE '\barg[0-9]+\b|\bD_[0-9A-F]{8}\b|\bfunc_[0-9A-F]{8}\b' src/*.c`.
 

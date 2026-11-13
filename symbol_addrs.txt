@@ -3018,3 +3018,4 @@ introAnimTime = 0x801E6608;
 allAdder = 0x801E660C;
 footprintTexFmt = 0x801F0232;
 jumptable = 0x801F40C0;
+FreeTitleScreen = 0x8011C7F0; // type:func

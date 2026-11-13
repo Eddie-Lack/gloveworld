@@ -386,7 +386,7 @@ static inline void FreeBackdropListInline(void) {
     InitBackdropList();
 }
 
-void func_8011C7F0(void) {
+void FreeTitleScreen(void) {
     FreeBackdropList();
 }
 

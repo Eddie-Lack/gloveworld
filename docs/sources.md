@@ -23,7 +23,8 @@ bytes larger, and its offset from the ROM drifts from -0x2F0 to -0x12A4.
 
 The map is from a PAL build. The final
 European ROM (NGVP, English, French and German) is the nearest known build. Its code is only 0x2C0 bytes smaller than the map's, and the offset between them changes at about 13
-places. The map has three functions that the USA ROM lacks (`FreeTitleScreen`, `CheckFrontProbe`, `ZCarBodge`).
+places. The map has two functions that the USA ROM lacks (`CheckFrontProbe`, `ZCarBodge`). A map function can share its
+address with a linker label: `FreeTitleScreen` starts at `rspbootTextEnd`.
 The first pass gave the map's `NewWorldScreen` name to the function after it. That function is the map's
 `ErrorScreen`, and both now have their map names.
 
@@ -52,7 +53,9 @@ kept outside this repository. Its CodeView debug records give:
 - the original **local and parameter names** of 678 of 895 functions, with basic types;
 - the names of **function statics** (`?name@?1??Function@@9@9` in its strings);
 - `S_CONSTANT` records for 160 **enum** types, of which about 30 are the game's own;
-- a type list with `VECTOR`, `BYTEVECTOR` and `SHORTVECTOR`.
+- a type list with `VECTOR`, `BYTEVECTOR` and `SHORTVECTOR`;
+- the original **struct type names** (`OBJECT_BANK`, `CATAPULT`, `BACKDROP`, `SPRITE`), without their members: the
+  member lists are in a type server file that we do not have.
 
 Limits:
 
