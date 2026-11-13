@@ -75,19 +75,6 @@ strings -n 6 Glover.iobj | grep "@?[0-9]??"                  # function statics
 
 The names may be used. Nothing else from the PC port is used.
 
-## The PC port's code analysis files
-
-Two reports of Visual Studio's code analysis of the PC port (`vc.nativecodeanalysis.all.xml` and
-`levfile.nativecodeanalysis.sarif`) are kept outside this repository. Each warning names a source file, a line, a
-function and often an expression. They give:
-
-- the original **source file names** (`actors.c`, `levfile.c`, `gameflow.c`, `titlescr.c`, `screens.c`, `objects.c`);
-- a few **struct member names** inside the expressions, for example `objectBanks.objList.objCont`,
-  `item->overlay`, `handControl.locateSprite`, `platform->moveSpin` and `actor->objectController`.
-
-The same limits apply as for the iobj: the names may be used, and nothing else. The reports name no member for any
-of the remaining placeholders.
-
 ## Other decompilations
 
 Public N64 decompilations may be read as references for the compiler's behaviour, with the owner's approval. No

@@ -81,7 +81,7 @@ Other sources checked, with no result:
   EndOfLevelScreen, ParseTokenGeneric and TransformAndDrawObject, and around the `unk16` store in
   CheckHandCatapult.
 - The PC port's lists give TransformAndDrawObject three parameters and FindObject no locals. They name the
-  struct types but not their members. Its code analysis files name a few members, none of these.
+  struct types but not their members.
 
 Find the placeholders with `grep -nE '\barg[0-9]+\b|\bD_[0-9A-F]{8}\b|\bfunc_[0-9A-F]{8}\b' src/*.c`.
 
