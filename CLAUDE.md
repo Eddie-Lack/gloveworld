@@ -26,6 +26,7 @@ original team's code: names, types and natural constructs. Read this file first,
 - **Time-box each attempt.** A rewrite of matched C that does not match is not committed.
 - **Write all prose (docs, comments, commits, PR text) in plain language** (ISO 24495-1): short sentences, one
   idea each, terms defined on first use. No em dashes. No AI model names. Times in Pacific time.
+- **No `Co-Authored-By` lines** in commit messages, PR text or files.
 - **Do not end sentences with a purpose clause** that explains why the preceding detail matters, such as "so
   that X instead of Y". State the fact and stop.
 
