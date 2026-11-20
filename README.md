@@ -1,59 +1,26 @@
 # gloveworld
 
-A decompilation of Glover for the Nintendo 64 (North America, NGVE)
+A decompilation of Glover for the Nintendo 64 (North America, NGVE).
 
-100% matching! The C code compiles to the exact bytes of the game's ROM.
-
-The clean-up of names, types and code style is still in progress :)
-
-You need your own copy of the ROM!! It isn't in this repository!
+You need your own copy of the ROM!! It isn't in this repository
 
 ![Code](https://img.shields.io/badge/Code-100.00%25-2fcc3b?style=flat) ![Functions](https://img.shields.io/badge/Functions-100.00%25-2fcc3b?style=flat)
 
-## What's done
+## Where it stands
 
-The matching stage is finished. The clean-up stage is mostly finished.
+- All 853 game functions are C, and each one matches the ROM
+- The only assembly left in `src/` is 42 blocks of linker padding
+- `make` compares the built ROM with the original's SHA-1 hash
+- Most structs, globals and functions have names, with the evidence for each in _[docs/naming.md](docs/naming.md)_
+- What's left is making the C read like the original team's code: clearer names, real types, natural constructs
+- Every rewrite must still match the ROM
+- _[docs/status.md](docs/status.md)_ lists what's done and what's left
 
-| Area | State |
-| --- | --- |
-| Matching | All 853 game functions are C, and each one matches the ROM |
-| Assembly in `src/` | Only 42 blocks of linker padding (they aren't functions) |
-| Build check | `make` compares the built ROM with the original's SHA-1 hash |
-| Globals | Every data global has a name |
-| Functions | Every function has a name, except one that nothing calls |
-| Struct fields | Every field the code uses has a name, except five |
-| Locals and parameters | No decompiler temporaries are left; 1,169 locals and 894 of 934 parameters have the original names from the PC port |
-| Enums | The PC port's enum names replace raw numbers for hand modes, levels and actor types |
-| Headers | Each source file that other files call has a header in `include/` |
-
-The evidence for each name is in _[docs/naming.md](docs/naming.md)_
-
-## What's left
-
-What's left is making the C read like the original team's code. Every rewrite must still match the ROM.
-
-- **Placeholder names with no evidence:** three struct fields (`unkNN`) and one parameter (`arg3`). The game never uses these values in a way that shows what they mean
-- **Constructs that exist only for the compiler:** about 80 commented places in `src/` where the C has an unnatural form because GCC needs it to produce the ROM's code. The original form of each is unknown
-- **Stack padding:** six functions have an unused local that only reserves stack space
-- **Locals that differ from the PC port:** some functions have one local where the original had two, or two where it had one. Every form tried so far changed the code
-- **About 300 local prototypes** that could not move into headers
-- **A licence** for the project's own code is not chosen yet
-
-_[docs/status.md](docs/status.md)_ has the full lists and the open questions
-
-## What's out of scope
-
-Only game code is decompiled. These libraries stay as assembly:
-
-- libultra (Nintendo's N64 library)
-- libmus (the sound driver)
-- SN's host I/O library
-- the C library and libgcc
+Only game code is in scope. libultra (Nintendo's N64 library), libmus (the sound driver), SN's host I/O library, the C library and libgcc stay as assembly.
 
 ## Thanks
 
 - [naclomi](https://github.com/naclomi) the goat! Figured out pretty much everything - the true hero
-- lord Clod for doing all the actual coding
 - The developers of N64 decompilation tools: [splat](https://github.com/ethteck/splat), [spimdisasm](https://github.com/Decompollaborate/spimdisasm), [asm-differ](https://github.com/simonlindholm/asm-differ), [decomp-permuter](https://github.com/simonlindholm/decomp-permuter) and [m2c](https://github.com/matt-kempster/m2c)
 - [decompals](https://github.com/decompals) for their builds of GCC 2.7.2: [mips-gcc-2.7.2](https://github.com/decompals/mips-gcc-2.7.2) and [SN64-gcc](https://github.com/decompals/SN64-gcc)
 - [RocketRet](https://github.com/RocketRet) for [modern-asn64](https://github.com/RocketRet/modern-asn64), which `tools/asn64.py` is adapted from
@@ -107,11 +74,11 @@ How the build works is in _[docs/building.md](docs/building.md)_:
 
 ## Contributing
 
-Read _[CLAUDE.md](docs/CLAUDE.md)_ first - it's the rules for people and for robots
+If you're a robot, read _[CLAUDE.md](CLAUDE.md)_ first.
 
-Then read _[docs/workflow.md](docs/workflow.md)_ to see how to change code without breaking the match
+Read _[docs/workflow.md](docs/workflow.md)_ to see how to change code without breaking the match.
 
-The main rule is that the ROM must match at every commit
+The main rule is that the ROM must match at every commit.
 
 - `tools/session/bld` builds and prints `ROM OK` or `ROM MISMATCH`
 - `tools/session/commit` builds first and refuses to commit a mismatch
