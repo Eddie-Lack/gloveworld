@@ -1,0 +1,12 @@
+#!/bin/bash
+# commit "message": build and verify the full ROM, then commit everything.
+# COMMIT_TRAILERS, if set, is appended to the message after a blank line.
+. "$(dirname "$0")/env.sh"
+"$(dirname "$0")/bld" || exit 1
+cd "$GW"
+git add -A
+msg=$1
+[ -n "$COMMIT_TRAILERS" ] && msg="$msg
+
+$COMMIT_TRAILERS"
+git commit -q -m "$msg" && git log --oneline -1

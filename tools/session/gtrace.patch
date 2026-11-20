@@ -1,0 +1,301 @@
+--- a/local-alloc.c
++++ b/local-alloc.c
+@@ -57,6 +57,7 @@
+ 
+ #include <stdio.h>
+ #include "config.h"
++#include "gtrace.h"
+ #include "rtl.h"
+ #include "flags.h"
+ #include "basic-block.h"
+@@ -1538,6 +1539,22 @@
+ 	}
+     }
+ 
++  if (gtrace_on ())
++    for (i = 0; i < next_qty; i++)
++      {
++	int r;
++	q = qty_order[i];
++	fprintf (stderr, "LA %s block %d qty %d regs", current_function_name, b, q);
++	for (r = qty_first_reg[q]; r >= 0; r = reg_next_in_qty[r])
++	  fprintf (stderr, " %d", r);
++	fprintf (stderr, " refs %d size %d birth %d death %d pri %d -> %d\n",
++		 qty_n_refs[q], qty_size[q], qty_birth[q], qty_death[q],
++		 qty_death[q] > qty_birth[q]
++		 ? (int) (((double) (floor_log2 (qty_n_refs[q]) * qty_n_refs[q] * qty_size[q])
++			   / (qty_death[q] - qty_birth[q])) * 10000) : -1,
++		 qty_phys_reg[q]);
++      }
++
+   /* Now propagate the register assignments
+      to the pseudo regs belonging to the qtys.  */
+ 
+--- a/global.c
++++ b/global.c
+@@ -21,6 +21,7 @@
+ 
+ #include <stdio.h>
+ #include "config.h"
++#include "gtrace.h"
+ #include "rtl.h"
+ #include "flags.h"
+ #include "basic-block.h"
+@@ -570,6 +571,21 @@
+ 	  }
+     }
+ 
++  if (gtrace_on ())
++    {
++      int i;
++      for (i = 0; i < max_allocno; i++)
++	{
++	  int a = allocno_order[i];
++	  fprintf (stderr, "GA %s order %d reg %d refs %d live %d size %d pri %d -> %d\n",
++		   current_function_name, i, allocno_reg[a], allocno_n_refs[a],
++		   allocno_live_length[a], allocno_size[a],
++		   (int) (((double) (floor_log2 (allocno_n_refs[a]) * allocno_n_refs[a])
++			   / allocno_live_length[a]) * 10000 * allocno_size[a]),
++		   reg_renumber[allocno_reg[a]]);
++	}
++    }
++
+   /* Do the reloads now while the allocno data still exist, so that we can
+      try to assign new hard regs to any pseudo regs that are spilled.  */
+ 
+@@ -1576,6 +1592,10 @@
+   if (reg_renumber[dest_regno] >= 0)
+     dest_regno = reg_renumber[dest_regno];
+ 
++  if (gtrace_on ())
++    fprintf (stderr, "PREF %s %s dest %d src %d copy %d\n", current_function_name,
++	     GET_RTX_NAME (GET_CODE (dest)), dest_regno, src_regno, copy);
++
+   /* Now if one is a hard reg and the other is a global pseudo
+      then give the other a preference.  */
+ 
+--- a/sched.c
++++ b/sched.c
+@@ -117,6 +117,7 @@
+ 
+ #include <stdio.h>
+ #include "config.h"
++#include "gtrace.h"
+ #include "rtl.h"
+ #include "basic-block.h"
+ #include "regs.h"
+@@ -2523,6 +2524,15 @@
+       /* Defer scheduling insns which kill registers, since that
+ 	 shortens register lives.  Prefer scheduling insns which
+ 	 make registers live for the same reason.  */
++      if (gtrace_on ())
++	{
++	  rtx pat = PATTERN (prev);
++	  fprintf (stderr, "ADJ %s insn %d pri %d deaths %d birthing %d", current_function_name,
++		   INSN_UID (prev), INSN_PRIORITY (prev), n_deaths, birthing_insn_p (pat));
++	  if (GET_CODE (pat) == SET && GET_CODE (SET_DEST (pat)) == REG)
++	    fprintf (stderr, " dest %d sets %d", REGNO (SET_DEST (pat)), reg_n_sets[REGNO (SET_DEST (pat))]);
++	  fprintf (stderr, "\n");
++	}
+       switch (n_deaths)
+ 	{
+ 	default:
+@@ -3658,6 +3668,20 @@
+   q_ptr = 0; clock = 0;
+   bzero ((char *) insn_queue, sizeof (insn_queue));
+ 
++  if (gtrace_on ())
++    {
++      rtx x;
++      fprintf (stderr, "PRI%d %s block %d:", reload_completed ? 2 : 1, current_function_name, b);
++      for (x = basic_block_head[b]; x; x = NEXT_INSN (x))
++	{
++	  if (GET_RTX_CLASS (GET_CODE (x)) == 'i')
++	    fprintf (stderr, " %d/%d", INSN_UID (x), INSN_PRIORITY (x));
++	  if (x == basic_block_end[b])
++	    break;
++	}
++      fprintf (stderr, "\n");
++    }
++
+   /* Now, perform list scheduling.  */
+ 
+   /* Where we start inserting insns is after TAIL.  */
+@@ -4041,6 +4065,20 @@
+ 	       clock, INSN_UID (basic_block_head[b]), INSN_UID (basic_block_end[b]));
+     }
+ 
++  if (gtrace_on ())
++    {
++      rtx x;
++      fprintf (stderr, "SCHED%d %s block %d:", reload_completed ? 2 : 1, current_function_name, b);
++      for (x = basic_block_head[b]; x; x = NEXT_INSN (x))
++	{
++	  if (GET_RTX_CLASS (GET_CODE (x)) == 'i')
++	    fprintf (stderr, " %d", INSN_UID (x));
++	  if (x == basic_block_end[b])
++	    break;
++	}
++      fprintf (stderr, "\n");
++    }
++
+   /* Yow! We're done!  */
+   free_pending_lists ();
+ 
+--- a/reorg.c
++++ b/reorg.c
+@@ -117,6 +117,7 @@
+ 
+ #include <stdio.h>
+ #include "config.h"
++#include "gtrace.h"
+ #include "rtl.h"
+ #include "insn-config.h"
+ #include "conditions.h"
+@@ -840,6 +841,18 @@
+   return end_of_function_label;
+ }
+ 
++static int reorg_pass_number;
++
++static void
++gtrace_regs (set)
++     HARD_REG_SET set;
++{
++  int r;
++  for (r = 0; r < FIRST_PSEUDO_REGISTER; r++)
++    if (TEST_HARD_REG_BIT (set, r))
++      fprintf (stderr, " %d", r);
++}
++
+ /* Put INSN and LIST together in a SEQUENCE rtx of LENGTH, and replace
+    the pattern of INSN with the SEQUENCE.
+ 
+@@ -864,6 +877,15 @@
+   /* Allocate the the rtvec to hold the insns and the SEQUENCE. */
+   rtvec seqv = rtvec_alloc (length + 1);
+   rtx seq = gen_rtx (SEQUENCE, VOIDmode, seqv);
++
++  if (gtrace_on ())
++    {
++      fprintf (stderr, "DBR %s pass %d branch %d %s slots", current_function_name, reorg_pass_number,
++	       INSN_UID (insn), GET_CODE (insn) == JUMP_INSN && INSN_ANNULLED_BRANCH_P (insn) ? "annulled" : "plain");
++      for (li = list; li; li = XEXP (li, 1))
++	fprintf (stderr, " %d", INSN_UID (XEXP (li, 0)));
++      fprintf (stderr, "\n");
++    }
+   rtx seq_insn = make_insn_raw (seq);
+   rtx first = get_insns ();
+   rtx last = get_last_insn ();
+@@ -2661,6 +2683,12 @@
+ 	}
+ 
+       COPY_HARD_REG_SET (res->regs, current_live_regs);
++      if (gtrace_on ())
++	{
++	  fprintf (stderr, "LIVE %s target %d block %d start:", current_function_name, INSN_UID (target), b);
++	  gtrace_regs (res->regs);
++	  fprintf (stderr, "\n");
++	}
+       tinfo->block = b;
+       tinfo->bb_tick = bb_ticks[b];
+     }
+@@ -2746,6 +2774,14 @@
+       AND_COMPL_HARD_REG_SET (res->regs, scratch);
+     }
+ 
++  if (gtrace_on ())
++    {
++      fprintf (stderr, "LIVE %s target %d after forward scan (jump %d):", current_function_name,
++	       INSN_UID (target), jump_insn ? INSN_UID (jump_insn) : -1);
++      gtrace_regs (res->regs);
++      fprintf (stderr, "\n");
++    }
++
+   /* If we hit an unconditional branch, we have another way of finding out
+      what is live: we can see what is live at the branch target and include
+      anything used but not set before the branch.  The only things that are
+@@ -2776,6 +2812,12 @@
+ 	}
+ 
+       AND_HARD_REG_SET (res->regs, new_resources.regs);
++      if (gtrace_on ())
++	{
++	  fprintf (stderr, "LIVE %s target %d after jump target:", current_function_name, INSN_UID (target));
++	  gtrace_regs (res->regs);
++	  fprintf (stderr, "\n");
++	}
+     }
+ 
+   COPY_HARD_REG_SET (tinfo->live_regs, res->regs);
+@@ -3291,6 +3333,15 @@
+     CLEAR_RESOURCE (&opposite_needed);
+   else
+     mark_target_live_regs (opposite_thread, &opposite_needed);
++  if (gtrace_on ())
++    {
++      fprintf (stderr, "THREAD %s pass %d branch %d thread %d opposite %d if_true %d own %d opposite needs:",
++	       current_function_name, reorg_pass_number, INSN_UID (insn), INSN_UID (thread),
++	       opposite_thread ? INSN_UID (opposite_thread) : -1, thread_if_true, own_thread);
++      if (opposite_thread)
++	gtrace_regs (opposite_needed.regs);
++      fprintf (stderr, "\n");
++    }
+ 
+   /* If the insn at THREAD can be split, do it here to avoid having to
+      update THREAD and NEW_THREAD if it is done in the loop below.  Also
+@@ -3683,6 +3734,17 @@
+ 	  prediction = mostly_true_jump (insn, condition);
+ 	}
+ 
++      if (gtrace_on () && getenv ("GTRACE_SKIP") && reorg_pass_number == 0
++	  && atoi (getenv ("GTRACE_SKIP")) == INSN_UID (insn))
++	continue;
++      if (gtrace_on () && getenv ("GTRACE_PRED")
++	  && atoi (getenv ("GTRACE_PRED")) == INSN_UID (insn))
++	prediction = atoi (strchr (getenv ("GTRACE_PRED"), ':') + 1);
++      if (gtrace_on ())
++	fprintf (stderr, "EAGER %s pass %d branch %d target %d prediction %d own_target %d own_fallthrough %d\n",
++		 current_function_name, reorg_pass_number, INSN_UID (insn), INSN_UID (target_label),
++		 prediction, own_target, own_fallthrough);
++
+       /* If this insn is expected to branch, first try to get insns from our
+ 	 target, then our fallthrough insns.  If it is not, expected to branch,
+ 	 try the other order.  */
+--- a/jump.c
++++ b/jump.c
+@@ -52,6 +52,7 @@
+    from other passes as well.  */
+ 
+ #include "config.h"
++#include "gtrace.h"
+ #include "rtl.h"
+ #include "flags.h"
+ #include "hard-reg-set.h"
+@@ -2541,6 +2542,10 @@
+      or make a new one if there is none.  */
+   register rtx label = get_label_before (newlpos);
+ 
++  if (gtrace_on ())
++    fprintf (stderr, "XJUMP %s jump %d keeps %d drops from %d\n", current_function_name,
++	     INSN_UID (insn), INSN_UID (newlpos), INSN_UID (newjpos));
++
+   /* Make the same jump insn jump to the new point.  */
+   if (GET_CODE (PATTERN (insn)) == RETURN)
+     {
+--- /dev/null
++++ b/gtrace.h
+@@ -0,0 +1,13 @@
++/* Trace output for matching work: set GTRACE=1, and GTRACE_FN=name to limit it to one function. */
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++extern char *current_function_name;
++static int
++gtrace_on ()
++{
++  char *f = getenv ("GTRACE_FN");
++  if (!getenv ("GTRACE"))
++    return 0;
++  return !f || (current_function_name && !strcmp (f, current_function_name));
++}
